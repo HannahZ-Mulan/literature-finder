@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/lib/types.ts",
+    "src/lib/global.d.ts",
+    "src/lib/rate-limiter.ts",
+    "src/lib/api/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/db",
+    "src/app",
+    "drizzle.config.ts",
+    "tailwind.config.ts"
+  ]
+}

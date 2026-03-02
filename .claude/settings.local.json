@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone:*)",
+      "Bash(xcopy:*)",
+      "Bash(bash:*)",
+      "Bash(npm run dev)",
+      "Bash(curl:*)",
+      "Bash(npx tsc:*)",
+      "Bash(dir:*)",
+      "Bash(del:*)",
+      "Bash(ping:*)"
+    ]
+  }
+}

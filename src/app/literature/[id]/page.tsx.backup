@@ -1,0 +1,536 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, ArrowLeft, FileText, Quote, Wand, BookOpen, Plus, Check, ExternalLink, ChevronDown, Download, Copy } from 'lucide-react';
+import { PDFViewer } from '@/components/pdf-viewer';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+interface Literature {
+  id: number;
+  title: string;
+  authors: string;
+  abstract: string | null;
+  doi: string | null;
+  publication_date: string | null;
+  journal: string | null;
+  citation_count: number;
+  source: string;
+  keywords: string | null;
+  pdf_url: string | null;
+}
+
+interface ReadingList {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
+export default function LiteratureDetailPage() {
+  const { id } = useParams();
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const [literature, setLiterature] = useState<Literature | null>(null);
+  const [isLoadingLiterature, setIsLoadingLiterature] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summary, setSummary] = useState('');
+  const [summaryLength, setSummaryLength] = useState<'short' | 'medium' | 'detailed'>('medium');
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [readingLists, setReadingLists] = useState<ReadingList[]>([]);
+  const [selectedReadingList, setSelectedReadingList] = useState<number | null>(null);
+  const [isAddingToList, setIsAddingToList] = useState(false);
+  const [showReadingListDropdown, setShowReadingListDropdown] = useState(false);
+
+  useEffect(() => {
+    if (id && user) {
+      fetchLiterature();
+      fetchReadingLists();
+    }
+  }, [id, user]);
+
+  const fetchReadingLists = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/reading-lists', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReadingLists(data.reading_lists || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch reading lists:', err);
+    }
+  };
+
+  const handleAddToReadingList = async (listId: number) => {
+    setIsAddingToList(true);
+    setError('');
+    setSuccessMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/reading-lists/${listId}/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          literature_id: parseInt(id as string),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add to reading list');
+      }
+
+      setSuccessMessage('已添加到阅读列表');
+      setShowReadingListDropdown(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError(err.message);
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setIsAddingToList(false);
+    }
+  };
+
+  const fetchLiterature = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/literature/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch literature');
+      }
+
+      setLiterature(data.literature);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoadingLiterature(false);
+    }
+  };
+
+  const handleExport = async (format: string) => {
+    setIsExporting(true);
+    setError('');
+    setSuccessMessage('');
+    try {
+      const response = await fetch(`/api/literature/${id}/export?format=${format}`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Export failed');
+      }
+
+      // Get citation text directly
+      const citationText = await response.text();
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(citationText);
+
+      // Show success message
+      setSuccessMessage(`${format.toUpperCase()} 引用已复制到剪贴板`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError('导出失败: ' + err.message);
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    setIsGeneratingSummary(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/literature/${id}/summary`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ length_level: summaryLength }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate summary');
+      }
+
+      setSummary(data.summary);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  if (isLoading || isLoadingLiterature) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin" />
+          <p className="ml-4">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground mb-4">请先登录</p>
+            <Button onClick={() => router.push('/login')}>前往登录</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!literature) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground mb-4">未找到文献</p>
+            <Button onClick={() => router.push('/library')}>返回文献库</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const authors = JSON.parse(literature.authors);
+  const keywords = literature.keywords ? JSON.parse(literature.keywords) : [];
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Back button */}
+        <Button variant="ghost" onClick={() => router.back()} className="mb-2">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          返回
+        </Button>
+
+        {/* Success/Error Messages */}
+        {successMessage && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+            <Check className="w-4 h-4" />
+            <span className="text-sm">{successMessage}</span>
+          </div>
+        )}
+
+        {/* Main Literature Card */}
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b bg-muted/30">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle className="text-2xl md:text-3xl leading-tight">{literature.title}</CardTitle>
+                  <Badge variant={literature.source === 'arxiv' ? 'default' : 'secondary'} className="shrink-0">
+                    {literature.source}
+                  </Badge>
+                </div>
+                <CardDescription className="text-base md:text-lg">
+                  {authors.map((a: any) => a.name).join(', ')}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 space-y-6">
+            {/* Metadata Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              {literature.journal && (
+                <div className="flex items-start gap-2">
+                  <span className="font-medium shrink-0">期刊：</span>
+                  <span className="text-muted-foreground break-all">{literature.journal}</span>
+                </div>
+              )}
+              {literature.publication_date && (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium shrink-0">发表年份：</span>
+                  <span className="text-muted-foreground">
+                    {new Date(literature.publication_date).getFullYear()}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="font-medium shrink-0">引用数：</span>
+                <span className="text-muted-foreground">{literature.citation_count}</span>
+              </div>
+              {literature.doi && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium shrink-0">DOI：</span>
+                  <a
+                    href={`https://doi.org/${literature.doi}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1 break-all"
+                  >
+                    {literature.doi}
+                    <ExternalLink className="w-3 h-3 shrink-0" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Keywords */}
+            {keywords.length > 0 && (
+              <div>
+                <span className="font-medium text-sm mb-2 block">关键词</span>
+                <div className="flex flex-wrap gap-2">
+                  {keywords.map((keyword: string, index: number) => (
+                    <Badge key={index} variant="outline" className="font-normal">
+                      {keyword}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            }
+
+            {/* Abstract */}
+            {literature.abstract && (
+              <div>
+                <h3 className="font-medium mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  摘要
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed text-justify">
+                  {literature.abstract}
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3 pt-4 border-t">
+              {/* Export Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button disabled={isExporting} className="min-w-[140px]">
+                    {isExporting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        导出中...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        导出引用
+                        <ChevronDown className="w-4 h-4 ml-1" />
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => handleExport('apa')}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    APA 格式
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('mla')}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    MLA 格式
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('chicago')}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Chicago 格式
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleExport('harvard')}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Harvard 格式
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('vancouver')}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Vancouver 格式
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Add to Reading List */}
+              {readingLists.length > 0 && (
+                <DropdownMenu open={showReadingListDropdown} onOpenChange={setShowReadingListDropdown}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" disabled={isAddingToList}>
+                      {isAddingToList ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          添加中...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-2" />
+                          添加到列表
+                        </>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    {readingLists.map((list) => (
+                      <DropdownMenuItem
+                        key={list.id}
+                        onClick={() => handleAddToReadingList(list.id)}
+                        disabled={isAddingToList}
+                      >
+                        <BookOpen className="w-4 h-4 mr-2" />
+                        <div className="flex flex-col">
+                          <span className="font-medium">{list.name}</span>
+                          {list.description && (
+                            <span className="text-xs text-muted-foreground">{list.description}</span>
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Error Message */}
+        {error && (
+          <Card className="border-destructive bg-destructive/10">
+            <CardContent className="py-4">
+              <p className="text-destructive text-sm">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* PDF 预览 */}
+        {literature.pdf_url && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                PDF 预览
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PDFViewer url={literature.pdf_url} title={literature.title} />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* AI Summary Card */}
+        <Card>
+          <CardHeader className="border-b bg-muted/30">
+            <CardTitle className="flex items-center gap-2">
+              <Wand className="w-5 h-5 text-purple-500" />
+              AI 摘要生成
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <span className="text-sm font-medium shrink-0">摘要长度</span>
+                <div className="flex gap-2 p-1 bg-muted rounded-lg">
+                  <Button
+                    variant={summaryLength === 'short' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setSummaryLength('short')}
+                    disabled={isGeneratingSummary}
+                    className="h-7"
+                  >
+                    简短
+                  </Button>
+                  <Button
+                    variant={summaryLength === 'medium' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setSummaryLength('medium')}
+                    disabled={isGeneratingSummary}
+                    className="h-7"
+                  >
+                    中等
+                  </Button>
+                  <Button
+                    variant={summaryLength === 'detailed' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setSummaryLength('detailed')}
+                    disabled={isGeneratingSummary}
+                    className="h-7"
+                  >
+                    详细
+                  </Button>
+                </div>
+              </div>
+              <Button
+                onClick={handleGenerateSummary}
+                disabled={isGeneratingSummary}
+                className="shrink-0"
+              >
+                {isGeneratingSummary ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    生成中...
+                  </>
+                ) : (
+                  <>
+                    <Wand className="w-4 h-4 mr-2" />
+                    生成摘要
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {summary && (
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 p-5 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-600" />
+                    生成的摘要
+                  </h4>
+                  <Badge variant="outline" className="text-xs">
+                    {summaryLength === 'short' ? '简短' : summaryLength === 'medium' ? '中等' : '详细'}
+                  </Badge>
+                </div>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap text-justify">
+                  {summary}
+                </p>
+              </div>
+            )}
+
+            {isGeneratingSummary && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">正在生成摘要...</span>
+                  <span className="text-muted-foreground">AI 处理中</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse" style={{ width: '60%' }}></div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

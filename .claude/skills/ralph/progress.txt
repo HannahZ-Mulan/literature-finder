@@ -1,0 +1,84 @@
+# Literature Finder - Ralph Progress Tracking
+
+## Project
+- Name: Literature Finder
+- Branch: ralph/literature-finder-mvp
+- Description: 智能文献查找助手 - 集成多个学术数据库，提供AI驱动的文献摘要、智能推荐和引用管理功能
+
+## User Stories Progress
+
+| ID | Title | Status |
+|----|-------|--------|
+| US-001 | Create users table schema with Drizzle | Completed |
+| US-002 | Create literature table schema | Completed |
+| US-003 | Create categories table schema | Completed |
+| US-004 | Create literature_categories junction table | In Progress |
+| US-005 | Create tags table schema | Pending |
+| US-006 | Create literature_tags junction table | Pending |
+| US-007 | Create reading_lists table schema | Pending |
+| US-008 | Create reading_list_items table schema | Pending |
+| US-009 | Create search_history table schema | Pending |
+| US-010 | Create summaries table schema | Pending |
+| US-011 | Create user_settings table schema | Pending |
+| US-012 | Implement arXiv API integration | Pending |
+| US-013 | Implement PubMed API integration | Pending |
+| US-014 | Implement Semantic Scholar API integration | Pending |
+| US-015 | Implement unified literature search API endpoint | Pending |
+| US-016 | Implement user registration endpoint | Pending |
+| US-017 | Implement user login endpoint | Pending |
+| US-018 | Implement JWT authentication middleware | Pending |
+| US-019 | Implement Google OAuth flow | Pending |
+| US-020 | Implement save literature to library endpoint | Pending |
+| US-021 | Implement get user literature library endpoint | Pending |
+| US-022 | Implement create category endpoint | Pending |
+| US-023 | Implement get user categories endpoint | Pending |
+| US-024 | Implement add literature to category endpoint | Pending |
+| US-025 | Implement create tag endpoint | Pending |
+| US-026 | Implement get user tags endpoint | Pending |
+| US-027 | Implement add tag to literature endpoint | Pending |
+| US-028 | Implement create reading list endpoint | Pending |
+| US-029 | Implement get reading lists endpoint | Pending |
+| US-030 | Implement add literature to reading list endpoint | Pending |
+| US-031 | Implement save search history endpoint | Pending |
+| US-032 | Implement get search history endpoint | Pending |
+| US-033 | Integrate Zhipu GLM API for summary generation | Pending |
+| US-034 | Implement generate literature summary endpoint | Pending |
+| US-035 | Implement get literature summary endpoint | Pending |
+| US-036 | Implement citation export endpoint | Pending |
+| US-037 | Implement citation formatting utility | Pending |
+| US-038 | Implement user settings endpoint | Pending |
+| US-039 | Initialize Next.js project with TypeScript and Tailwind | Pending |
+| US-040 | Create search page layout | Pending |
+| US-041 | Create literature card component | Pending |
+| US-042 | Implement search results pagination | Pending |
+| US-043 | Create login page | Pending |
+| US-044 | Create registration page | Pending |
+| US-045 | Create library page layout | Pending |
+| US-046 | Create category sidebar component | Pending |
+| US-047 | Create tag filter component | Pending |
+| US-048 | Create literature detail page | Pending |
+| US-049 | Create reading lists page | Pending |
+| US-050 | Create reading list detail page | Pending |
+| US-051 | Create search history page | Pending |
+| US-052 | Create settings page | Pending |
+| US-053 | Create navigation header component | Pending |
+| US-054 | Implement PDF preview modal | Pending |
+| US-055 | Implement PDF annotation UI | Pending |
+| US-056 | Create save annotations endpoint | Pending |
+| US-057 | Implement dark mode toggle | Pending |
+| US-058 | Create responsive layout for mobile | Pending |
+| US-059 | Create export modal component | Pending |
+| US-060 | Implement AI recommendation endpoint | Pending |
+| US-061 | Create recommendation page | Pending |
+| US-062 | Add loading and error states to API calls | Pending |
+| US-063 | Add toast notification system | Pending |
+
+## Notes
+- Total Stories: 63
+- Completed: 2
+- In Progress: 1 (US-003)
+- Pending: 60
+
+## Recent Activity
+- [2026-01-17] US-002 Completed: literature table created with all required fields, indexes on doi and title, migrations generated, typecheck passes
+- [2026-01-17] US-001 Completed: users table schema created with all required fields, unique index on email, migration generated, typecheck passes

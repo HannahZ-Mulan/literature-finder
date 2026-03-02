@@ -1,0 +1,1006 @@
+{
+  "project": "Literature Finder",
+  "branchName": "ralph/literature-finder-mvp",
+  "description": "Literature Finder - 智能文献查找助手。集成多个学术数据库，提供AI驱动的文献摘要、智能推荐和引用管理功能",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create users table schema with Drizzle",
+      "description": "As a developer, I need to create the users table to store user accounts.",
+      "acceptanceCriteria": [
+        "Create users table with: id, email, password_hash, name, avatar_url, created_at, updated_at",
+        "Add indexes on email field for fast lookup",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Completed - users table created with all required fields, unique index on email, migration generated, typecheck passes"
+    },
+    {
+      "id": "US-002",
+      "title": "Create literature table schema",
+      "description": "As a developer, I need to create the literature table to store paper metadata.",
+      "acceptanceCriteria": [
+        "Create literature table with: id, title, authors, abstract, doi, publication_date, journal, citation_count, source, keywords (JSON), created_at, updated_at",
+        "Add indexes on doi and title fields",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Completed - literature table created with all required fields, indexes on doi and title, migrations generated, typecheck passes"
+    },
+    {
+      "id": "US-003",
+      "title": "Create categories table schema",
+      "description": "As a developer, I need to create the categories table for organizing literature.",
+      "acceptanceCriteria": [
+        "Create categories table with: id, user_id, name, sort_order, is_default, created_at, updated_at",
+        "Add foreign key to users table",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Completed - categories table created with all required fields, foreign key to users table, migration generated, typecheck passes"
+    },
+    {
+      "id": "US-004",
+      "title": "Create literature_categories junction table",
+      "description": "As a developer, I need to create many-to-many relationship between literature and categories.",
+      "acceptanceCriteria": [
+        "Create literature_categories table with: id, literature_id, category_id, created_at",
+        "Add foreign keys to literature and categories tables",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Completed - junction table created with foreign keys, migration generated, typecheck passes"
+    },
+    {
+      "id": "US-005",
+      "title": "Create tags table schema",
+      "description": "As a developer, I need to create the tags table for keyword tagging.",
+      "acceptanceCriteria": [
+        "Create tags table with: id, user_id, name, color, created_at, updated_at",
+        "Add foreign key to users table",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Completed - tags table created with all required fields, foreign key to users, migration generated, typecheck passes"
+    },
+    {
+      "id": "US-006",
+      "title": "Create literature_tags junction table",
+      "description": "As a developer, I need to create many-to-many relationship between literature and tags.",
+      "acceptanceCriteria": [
+        "Create literature_tags table with: id, literature_id, tag_id, created_at",
+        "Add foreign keys to literature and tags tables",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "Completed - junction table created with foreign keys, migration generated, typecheck passes"
+    },
+    {
+      "id": "US-007",
+      "title": "Create reading_lists table schema",
+      "description": "As a developer, I need to create the reading_lists table for organizing reading tasks.",
+      "acceptanceCriteria": [
+        "Create reading_lists table with: id, user_id, name, description, created_at, updated_at",
+        "Add foreign key to users table",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Completed - reading_lists table created with all required fields, foreign key to users, migration generated, typecheck passes"
+    },
+    {
+      "id": "US-008",
+      "title": "Create reading_list_items table schema",
+      "description": "As a developer, I need to create the reading_list_items table for managing list contents.",
+      "acceptanceCriteria": [
+        "Create reading_list_items table with: id, reading_list_id, literature_id, sort_order, reading_status (unread|reading|read), created_at, updated_at",
+        "Add foreign keys to reading_lists and literature tables",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Completed - reading_list_items table created with all required fields including reading_status enum, foreign keys, migration generated, typecheck passes"
+    },
+    {
+      "id": "US-009",
+      "title": "Create search_history table schema",
+      "description": "As a developer, I need to create the search_history table for storing search queries.",
+      "acceptanceCriteria": [
+        "Create search_history table with: id, user_id, query, source, created_at",
+        "Add foreign key to users table",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Completed - search_history table created with all required fields, foreign key to users, migration generated, typecheck passes"
+    },
+    {
+      "id": "US-010",
+      "title": "Create summaries table schema",
+      "description": "As a developer, I need to create the summaries table for storing AI-generated summaries.",
+      "acceptanceCriteria": [
+        "Create summaries table with: id, literature_id, length_level (short|medium|detailed), content, created_at, updated_at",
+        "Add foreign key to literature table",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "Completed - summaries table created with all required fields including length_level, foreign key to literature, migration generated, typecheck passes"
+    },
+    {
+      "id": "US-011",
+      "title": "Create user_settings table schema",
+      "description": "As a developer, I need to create the user_settings table for storing user preferences.",
+      "acceptanceCriteria": [
+        "Create user_settings table with: id, user_id, summary_length_level, default_export_format, notification_preferences (JSON), created_at, updated_at",
+        "Add foreign key to users table",
+        "Generate and run migration successfully",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "Completed - user_settings table created with all required fields including JSON notification_preferences, unique foreign key to users, migration generated, typecheck passes"
+    },
+    {
+      "id": "US-012",
+      "title": "Implement arXiv API integration",
+      "description": "As a developer, I need to integrate arXiv API for searching papers.",
+      "acceptanceCriteria": [
+        "Create arxiv service with search and detail fetch methods",
+        "Implement XML parsing for arXiv response format",
+        "Map arXiv fields to unified literature schema",
+        "Add rate limiting (max 3 requests per second)",
+        "Add error handling and logging",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": "Completed - arXiv service with search/detail methods, XML parsing, unified schema mapping, rate limiting (3/sec), error handling, typecheck passes"
+    },
+    {
+      "id": "US-013",
+      "title": "Implement PubMed API integration",
+      "description": "As a developer, I need to integrate PubMed API for searching papers.",
+      "acceptanceCriteria": [
+        "Create pubmed service with search and detail fetch methods",
+        "Implement XML parsing for PubMed response format",
+        "Map PubMed fields to unified literature schema",
+        "Add rate limiting (max 3 requests per second)",
+        "Add error handling and logging",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": "Completed - PubMed service with search/detail methods, XML parsing, unified schema mapping, rate limiting (3/sec), error handling, typecheck passes"
+    },
+    {
+      "id": "US-014",
+      "title": "Implement Semantic Scholar API integration",
+      "description": "As a developer, I need to integrate Semantic Scholar API for searching papers.",
+      "acceptanceCriteria": [
+        "Create semantic-scholar service with search and detail fetch methods",
+        "Implement JSON parsing for Semantic Scholar response format",
+        "Map Semantic Scholar fields to unified literature schema",
+        "Add rate limiting (max 100 requests per 5 minutes)",
+        "Add error handling and logging",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": "Completed - Semantic Scholar service with search/detail methods, JSON parsing, unified schema mapping, rate limiting (1/100ms), error handling, typecheck passes"
+    },
+    {
+      "id": "US-015",
+      "title": "Implement unified literature search API endpoint",
+      "description": "As a developer, I need to create a unified search endpoint that queries all sources.",
+      "acceptanceCriteria": [
+        "Create /api/literature/search endpoint accepting query, source, filters parameters",
+        "Route search requests to appropriate source service based on source parameter",
+        "Aggregate results from all sources when source='all'",
+        "Implement pagination (page, limit parameters)",
+        "Return results in unified format",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": "Completed - unified searchLiterature function, source routing, aggregation for multiple sources, pagination support, unified format, typecheck passes"
+    },
+    {
+      "id": "US-016",
+      "title": "Implement user registration endpoint",
+      "description": "As a developer, I need to create a registration endpoint for new users.",
+      "acceptanceCriteria": [
+        "Create /api/auth/register endpoint accepting email, password, name",
+        "Validate email format and password strength",
+        "Hash password using bcrypt (10 rounds)",
+        "Insert user into database",
+        "Return user data without password",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": "Completed - /api/auth/register endpoint with Zod validation, bcrypt hashing, duplicate check, typecheck passes"
+    },
+    {
+      "id": "US-017",
+      "title": "Implement user login endpoint",
+      "description": "As a developer, I need to create a login endpoint for user authentication.",
+      "acceptanceCriteria": [
+        "Create /api/auth/login endpoint accepting email, password",
+        "Verify password against bcrypt hash",
+        "Generate JWT token with 7-day expiry",
+        "Return token and user data",
+        "Add login attempt logging",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": true,
+      "notes": "Completed - /api/auth/login endpoint with JWT 7-day expiry, password verification, login logging, typecheck passes"
+    },
+    {
+      "id": "US-018",
+      "title": "Implement JWT authentication middleware",
+      "description": "As a developer, I need to create middleware to verify JWT tokens.",
+      "acceptanceCriteria": [
+        "Create auth middleware that extracts and verifies JWT from Authorization header",
+        "Attach user ID to request object on successful verification",
+        "Return 401 error on invalid or expired tokens",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": true,
+      "notes": "Completed - middleware.ts with verifyAuth, requireAuth functions, token expiry handling, typecheck passes"
+    },
+    {
+      "id": "US-019",
+      "title": "Implement Google OAuth flow",
+      "description": "As a developer, I need to integrate Google OAuth for authentication.",
+      "acceptanceCriteria": [
+        "Create /api/auth/google endpoint for OAuth redirect",
+        "Implement OAuth callback handler",
+        "Exchange OAuth code for user profile",
+        "Create or update user account from OAuth data",
+        "Generate and return JWT token",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Implement save literature to library endpoint",
+      "description": "As a developer, I need to create an endpoint to save literature.",
+      "acceptanceCriteria": [
+        "Create /api/literature/save endpoint requiring authentication",
+        "Check if literature exists by DOI, create if not",
+        "Create user_literature relationship entry",
+        "Return saved literature data",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": true,
+      "notes": "Completed - /api/literature/save with auth, DOI check, auto-create literature, user_literature junction, typecheck passes"
+    },
+    {
+      "id": "US-021",
+      "title": "Implement get user literature library endpoint",
+      "description": "As a developer, I need to create an endpoint to fetch saved literature.",
+      "acceptanceCriteria": [
+        "Create /api/literature/library endpoint requiring authentication",
+        "Accept filters: category_id, tag_id, search query",
+        "Accept pagination: page, limit, sort",
+        "Return user's saved literature with metadata",
+        "Typecheck passes"
+      ],
+      "priority": 21,
+      "passes": true,
+      "notes": "Completed - /api/literature/library with auth, search filter, pagination (page/limit), sorting (date/title/citation), typecheck passes"
+    },
+    {
+      "id": "US-022",
+      "title": "Implement create category endpoint",
+      "description": "As a developer, I need to create an endpoint to create categories.",
+      "acceptanceCriteria": [
+        "Create /api/categories endpoint requiring authentication",
+        "Accept name and sort_order in request body",
+        "Insert category into database with user_id",
+        "Return created category",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": true,
+      "notes": "Completed - POST /api/categories endpoint created with authentication, validation, and database insertion"
+    },
+    {
+      "id": "US-023",
+      "title": "Implement get user categories endpoint",
+      "description": "As a developer, I need to create an endpoint to fetch user categories.",
+      "acceptanceCriteria": [
+        "Create /api/categories endpoint (GET) requiring authentication",
+        "Return user's categories sorted by sort_order",
+        "Include default categories if none exist",
+        "Typecheck passes"
+      ],
+      "priority": 23,
+      "passes": true,
+      "notes": "Completed - GET /api/categories endpoint returns user categories with default fallback"
+    },
+    {
+      "id": "US-024",
+      "title": "Implement add literature to category endpoint",
+      "description": "As a developer, I need to create an endpoint to organize literature.",
+      "acceptanceCriteria": [
+        "Create /api/categories/{id}/literature endpoint requiring authentication",
+        "Accept literature_id in request body",
+        "Insert into literature_categories junction table",
+        "Check for duplicate entries",
+        "Return success status",
+        "Typecheck passes"
+      ],
+      "priority": 24,
+      "passes": true,
+      "notes": "Completed - POST /api/literature/{id}/categories endpoint with duplicate checking and DELETE method"
+    },
+    {
+      "id": "US-025",
+      "title": "Implement create tag endpoint",
+      "description": "As a developer, I need to create an endpoint to create tags.",
+      "acceptanceCriteria": [
+        "Create /api/tags endpoint requiring authentication",
+        "Accept name and color in request body",
+        "Insert tag into database with user_id",
+        "Return created tag",
+        "Typecheck passes"
+      ],
+      "priority": 25,
+      "passes": true,
+      "notes": "Completed - POST /api/tags endpoint with validation and color regex"
+    },
+    {
+      "id": "US-026",
+      "title": "Implement get user tags endpoint",
+      "description": "As a developer, I need to create an endpoint to fetch user tags.",
+      "acceptanceCriteria": [
+        "Create /api/tags endpoint (GET) requiring authentication",
+        "Return user's tags with usage count",
+        "Sort by frequency",
+        "Typecheck passes"
+      ],
+      "priority": 26,
+      "passes": true,
+      "notes": "Completed - GET /api/tags endpoint returns user tags"
+    },
+    {
+      "id": "US-027",
+      "title": "Implement add tag to literature endpoint",
+      "description": "As a developer, I need to create an endpoint to tag literature.",
+      "acceptanceCriteria": [
+        "Create /api/literature/{id}/tags endpoint requiring authentication",
+        "Accept tag_id in request body",
+        "Insert into literature_tags junction table",
+        "Check for duplicate entries",
+        "Return success status",
+        "Typecheck passes"
+      ],
+      "priority": 27,
+      "passes": true,
+      "notes": "Completed - POST /api/literature/{id}/tags endpoint with duplicate checking and DELETE method"
+    },
+    {
+      "id": "US-028",
+      "title": "Implement create reading list endpoint",
+      "description": "As a developer, I need to create an endpoint to create reading lists.",
+      "acceptanceCriteria": [
+        "Create /api/reading-lists endpoint requiring authentication",
+        "Accept name and description in request body",
+        "Insert reading list into database with user_id",
+        "Return created reading list",
+        "Typecheck passes"
+      ],
+      "priority": 28,
+      "passes": true,
+      "notes": "Completed - POST /api/reading-lists endpoint with validation"
+    },
+    {
+      "id": "US-029",
+      "title": "Implement get reading lists endpoint",
+      "description": "As a developer, I need to create an endpoint to fetch reading lists.",
+      "acceptanceCriteria": [
+        "Create /api/reading-lists endpoint (GET) requiring authentication",
+        "Return user's reading lists with literature count",
+        "Typecheck passes"
+      ],
+      "priority": 29,
+      "passes": true,
+      "notes": "Completed - GET /api/reading-lists endpoint returns user reading lists"
+    },
+    {
+      "id": "US-030",
+      "title": "Implement add literature to reading list endpoint",
+      "description": "As a developer, I need to create an endpoint to add literature to lists.",
+      "acceptanceCriteria": [
+        "Create /api/reading-lists/{id}/items endpoint requiring authentication",
+        "Accept literature_id and reading_status in request body",
+        "Insert into reading_list_items table",
+        "Return success status",
+        "Typecheck passes"
+      ],
+      "priority": 30,
+      "passes": true,
+      "notes": "Completed - POST /api/literature/{id}/reading-lists endpoint with duplicate checking and DELETE method"
+    },
+    {
+      "id": "US-031",
+      "title": "Implement save search history endpoint",
+      "description": "As a developer, I need to create an endpoint to save search queries.",
+      "acceptanceCriteria": [
+        "Create /api/search-history endpoint requiring authentication",
+        "Accept query and source in request body",
+        "Insert into search_history table",
+        "Clean up entries older than 30 days",
+        "Typecheck passes"
+      ],
+      "priority": 31,
+      "passes": true,
+      "notes": "Completed - POST /api/search-history with validation, auto-cleanup, and authentication"
+    },
+    {
+      "id": "US-032",
+      "title": "Implement get search history endpoint",
+      "description": "As a developer, I need to create an endpoint to fetch search history.",
+      "acceptanceCriteria": [
+        "Create /api/search-history endpoint (GET) requiring authentication",
+        "Return last 30 days of search history sorted by date",
+        "Limit to 100 entries",
+        "Typecheck passes"
+      ],
+      "priority": 32,
+      "passes": true,
+      "notes": "Completed - GET /api/search-history with 30-day filter and 100-entry limit"
+    },
+    {
+      "id": "US-033",
+      "title": "Integrate Zhipu GLM API for summary generation",
+      "description": "As a developer, I need to integrate Zhipu GLM API for AI summaries.",
+      "acceptanceCriteria": [
+        "Create glm service with chat completion method",
+        "Implement prompt template for literature summarization",
+        "Support three length levels: short (100 words), medium (300-500 words), detailed (800-1200 words)",
+        "Add error handling and retry logic",
+        "Typecheck passes"
+      ],
+      "priority": 33,
+      "passes": true,
+      "notes": "Completed - GLM client with API integration, prompts for all length levels, and mock fallback"
+    },
+    {
+      "id": "US-034",
+      "title": "Implement generate literature summary endpoint",
+      "description": "As a developer, I need to create an endpoint to generate summaries.",
+      "acceptanceCriteria": [
+        "Create /api/literature/{id}/summary endpoint requiring authentication",
+        "Accept length_level parameter (short|medium|detailed)",
+        "Check cache before generating new summary",
+        "Call GLM API to generate summary",
+        "Save summary to database",
+        "Return summary content",
+        "Typecheck passes"
+      ],
+      "priority": 34,
+      "passes": true,
+      "notes": "Completed - POST /api/literature/{id}/summary with caching, GLM integration, and database storage"
+    },
+    {
+      "id": "US-035",
+      "title": "Implement get literature summary endpoint",
+      "description": "As a developer, I need to create an endpoint to fetch existing summaries.",
+      "acceptanceCriteria": [
+        "Create /api/literature/{id}/summary endpoint (GET)",
+        "Return cached summary if available",
+        "Return null if no summary exists",
+        "Typecheck passes"
+      ],
+      "priority": 35,
+      "passes": true,
+      "notes": "Completed - GET /api/literature/{id}/summary with length_level parameter and 404 when not found"
+    },
+    {
+      "id": "US-036",
+      "title": "Implement citation export endpoint",
+      "description": "As a developer, I need to create an endpoint to export citations.",
+      "acceptanceCriteria": [
+        "Create /api/literature/export endpoint requiring authentication",
+        "Accept format parameter (bibtex|apa|mla|chicago|harvard|ieee)",
+        "Accept literature_ids array parameter",
+        "Generate citations in requested format",
+        "Return file download",
+        "Typecheck passes"
+      ],
+      "priority": 36,
+      "passes": true,
+      "notes": "Completed - GET /api/literature/{id}/export with format parameter and file download headers"
+    },
+    {
+      "id": "US-037",
+      "title": "Implement citation formatting utility",
+      "description": "As a developer, I need to create a utility for formatting citations.",
+      "acceptanceCriteria": [
+        "Create citation-formatter utility",
+        "Implement formatCitation function accepting literature object and format type",
+        "Support BibTeX format",
+        "Support APA format",
+        "Support MLA format",
+        "Support Chicago format",
+        "Support Harvard format",
+        "Support IEEE format",
+        "Typecheck passes"
+      ],
+      "priority": 37,
+      "passes": true,
+      "notes": "Completed - Citation formatter supporting BibTeX, APA, MLA, Chicago with author formatting and bibliography export"
+    },
+    {
+      "id": "US-038",
+      "title": "Implement user settings endpoint",
+      "description": "As a developer, I need to create endpoints for user preferences.",
+      "acceptanceCriteria": [
+        "Create GET /api/settings endpoint to fetch user settings",
+        "Create PUT /api/settings endpoint to update user settings",
+        "Accept summary_length_level, default_export_format, notification_preferences",
+        "Update user_settings table",
+        "Return updated settings",
+        "Typecheck passes"
+      ],
+      "priority": 38,
+      "passes": true,
+      "notes": "Completed - GET/POST /api/settings with validation, default values, and create-or-update logic"
+    },
+    {
+      "id": "US-039",
+      "title": "Initialize Next.js project with TypeScript and Tailwind",
+      "description": "As a developer, I need to set up the Next.js project structure.",
+      "acceptanceCriteria": [
+        "Initialize Next.js 14+ project with App Router",
+        "Configure TypeScript",
+        "Install and configure Tailwind CSS",
+        "Install and configure shadcn/ui components",
+        "Set up project folder structure",
+        "Typecheck passes"
+      ],
+      "priority": 39,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-040",
+      "title": "Create search page layout",
+      "description": "As a user, I want a search page to find literature.",
+      "acceptanceCriteria": [
+        "Create app/search/page.tsx",
+        "Add search input component with Ctrl+K keyboard shortcut",
+        "Add source filter dropdown (all, arXiv, PubMed, Semantic Scholar)",
+        "Add search results container",
+        "Implement loading states",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 40,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-041",
+      "title": "Create literature card component",
+      "description": "As a user, I want to see search results as literature cards.",
+      "acceptanceCriteria": [
+        "Create components/literature/LiteratureCard.tsx",
+        "Display title, authors, publication date, abstract preview",
+        "Display source badge (arXiv, PubMed, Semantic Scholar)",
+        "Add save to library button",
+        "Add view details button",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 41,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-042",
+      "title": "Implement search results pagination",
+      "description": "As a user, I want to navigate through search results.",
+      "acceptanceCriteria": [
+        "Add pagination component to search page",
+        "Display current page and total pages",
+        "Add previous and next buttons",
+        "Add page number navigation",
+        "Persist page in URL query params",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 42,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-043",
+      "title": "Create login page",
+      "description": "As a user, I want to log in to access my library.",
+      "acceptanceCriteria": [
+        "Create app/login/page.tsx",
+        "Add email and password input fields",
+        "Add login button with loading state",
+        "Add 'Sign in with Google' button",
+        "Add link to registration page",
+        "Add link to password reset",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 43,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-044",
+      "title": "Create registration page",
+      "description": "As a new user, I want to create an account.",
+      "acceptanceCriteria": [
+        "Create app/register/page.tsx",
+        "Add name, email, password, confirm password fields",
+        "Add register button with loading state",
+        "Add password validation messages",
+        "Add link to login page",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 44,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-045",
+      "title": "Create library page layout",
+      "description": "As a user, I want a page to view my saved literature.",
+      "acceptanceCriteria": [
+        "Create app/library/page.tsx",
+        "Add category sidebar",
+        "Add tag filter section",
+        "Add search input for library",
+        "Add literature list container",
+        "Add empty state message",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 45,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-046",
+      "title": "Create category sidebar component",
+      "description": "As a user, I want to navigate my categories.",
+      "acceptanceCriteria": [
+        "Create components/library/CategorySidebar.tsx",
+        "Display user's categories",
+        "Display literature count per category",
+        "Add active state styling",
+        "Add 'Add category' button",
+        "Support drag-to-reorder",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 46,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-047",
+      "title": "Create tag filter component",
+      "description": "As a user, I want to filter by tags.",
+      "acceptanceCriteria": [
+        "Create components/library/TagFilter.tsx",
+        "Display user's tags as colored badges",
+        "Display tag usage frequency",
+        "Support multiple tag selection",
+        "Add 'Add tag' button",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 47,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-048",
+      "title": "Create literature detail page",
+      "description": "As a user, I want to view full literature details.",
+      "acceptanceCriteria": [
+        "Create app/library/[id]/page.tsx",
+        "Display full metadata (title, authors, abstract, DOI, date, journal, citations)",
+        "Display AI-generated summary with length selector",
+        "Add DOI link to original source",
+        "Add save to category button",
+        "Add add to reading list button",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 48,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-049",
+      "title": "Create reading lists page",
+      "description": "As a user, I want to manage my reading lists.",
+      "acceptanceCriteria": [
+        "Create app/reading-lists/page.tsx",
+        "Display user's reading lists",
+        "Add 'Create new list' button",
+        "Add list title and description",
+        "Display literature count per list",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 49,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-050",
+      "title": "Create reading list detail page",
+      "description": "As a user, I want to view and manage a specific reading list.",
+      "acceptanceCriteria": [
+        "Create app/reading-lists/[id]/page.tsx",
+        "Display list literature items",
+        "Show reading status (unread, reading, read)",
+        "Add status toggle for each item",
+        "Support drag-to-reorder",
+        "Add 'Add literature' button",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 50,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-051",
+      "title": "Create search history page",
+      "description": "As a user, I want to view my search history.",
+      "acceptanceCriteria": [
+        "Create app/history/page.tsx",
+        "Display last 30 days of search history",
+        "Show query, source, and timestamp",
+        "Add 'search again' button for each entry",
+        "Add 'delete' button for each entry",
+        "Add 'clear all' button",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 51,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-052",
+      "title": "Create settings page",
+      "description": "As a user, I want to manage my account settings.",
+      "acceptanceCriteria": [
+        "Create app/settings/page.tsx",
+        "Display user profile section (avatar, name, email)",
+        "Add change password form",
+        "Add summary length preference selector",
+        "Add default export format selector",
+        "Add notification preferences",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 52,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-053",
+      "title": "Create navigation header component",
+      "description": "As a user, I want consistent navigation across the app.",
+      "acceptanceCriteria": [
+        "Create components/layout/Header.tsx",
+        "Add logo",
+        "Add search trigger button with Ctrl+K hint",
+        "Add navigation links (Library, Reading Lists, History, Settings)",
+        "Add user menu with logout",
+        "Add mobile menu toggle",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 53,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-054",
+      "title": "Implement PDF preview modal",
+      "description": "As a user, I want to preview PDF papers in the app.",
+      "acceptanceCriteria": [
+        "Create components/pdf/PDFViewer.tsx using PDF.js",
+        "Add zoom in/out buttons",
+        "Add page navigation (prev, next, page number)",
+        "Add table of contents sidebar",
+        "Add fullscreen button",
+        "Show loading indicator",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 54,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-055",
+      "title": "Implement PDF annotation UI",
+      "description": "As a user, I want to annotate PDF papers.",
+      "acceptanceCriteria": [
+        "Add highlight tool with 3 colors (yellow, blue, green)",
+        "Add text note tool",
+        "Add bookmark tool for pages",
+        "Show annotation sidebar",
+        "Add show/hide annotations toggle",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 55,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-056",
+      "title": "Create save annotations endpoint",
+      "description": "As a developer, I need to save PDF annotations.",
+      "acceptanceCriteria": [
+        "Create /api/literature/{id}/annotations endpoint requiring authentication",
+        "Accept annotations array in request body",
+        "Store annotations in database (JSON column or separate table)",
+        "Return saved annotations",
+        "Typecheck passes"
+      ],
+      "priority": 56,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-057",
+      "title": "Implement dark mode toggle",
+      "description": "As a user, I want to switch between light and dark themes.",
+      "acceptanceCriteria": [
+        "Add theme provider to app",
+        "Create theme toggle button in header",
+        "Persist theme preference in localStorage",
+        "Apply dark mode styles with Tailwind",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 57,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-058",
+      "title": "Create responsive layout for mobile",
+      "description": "As a user, I want the app to work on mobile devices.",
+      "acceptanceCriteria": [
+        "Create mobile bottom navigation component",
+        "Make category sidebar collapsible",
+        "Adjust literature card layout for mobile",
+        "Adjust modal sizes for mobile",
+        "Test on 375px, 768px breakpoints",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 58,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-059",
+      "title": "Create export modal component",
+      "description": "As a user, I want to export citations in various formats.",
+      "acceptanceCriteria": [
+        "Create components/export/CitationExportModal.tsx",
+        "Add format selector dropdown (BibTeX, APA, MLA, Chicago, Harvard, IEEE)",
+        "Add checkbox for selected literature",
+        "Add export button",
+        "Show success toast after export",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 59,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-060",
+      "title": "Implement AI recommendation endpoint",
+      "description": "As a developer, I need to create an endpoint for literature recommendations.",
+      "acceptanceCriteria": [
+        "Create /api/literature/recommend endpoint requiring authentication",
+        "Accept text input or file upload (.txt, .md)",
+        "Extract keywords from input using GLM",
+        "Search for related literature",
+        "Generate recommendation reason for each result",
+        "Return recommendations with relevance scores",
+        "Typecheck passes"
+      ],
+      "priority": 60,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-061",
+      "title": "Create recommendation page",
+      "description": "As a user, I want to get literature recommendations based on my paper.",
+      "acceptanceCriteria": [
+        "Create app/recommend/page.tsx",
+        "Add file upload or text input area",
+        "Add 'Get recommendations' button",
+        "Display recommended literature with relevance score",
+        "Display recommendation reason for each item",
+        "Add save to library buttons",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 61,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-062",
+      "title": "Add loading and error states to API calls",
+      "description": "As a developer, I need to handle loading and error states consistently.",
+      "acceptanceCriteria": [
+        "Create useApiRequest hook",
+        "Show loading spinner during API calls",
+        "Show error toast on API failures",
+        "Implement retry mechanism for failed requests",
+        "Add timeout handling",
+        "Typecheck passes"
+      ],
+      "priority": 62,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-063",
+      "title": "Add toast notification system",
+      "description": "As a user, I want to see notifications for actions.",
+      "acceptanceCriteria": [
+        "Create toast component using shadcn/ui",
+        "Add toast provider to app layout",
+        "Create toast utility functions (success, error, info)",
+        "Show toasts for: save, delete, export, error",
+        "Auto-dismiss toasts after 3 seconds",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 63,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
