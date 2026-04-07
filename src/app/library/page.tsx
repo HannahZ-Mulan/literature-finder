@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLibrary } from '@/hooks/use-api';
 import { useAuth } from '@/hooks/use-auth';
@@ -27,7 +27,8 @@ import {
   Check,
   Folder,
   ArrowRight,
-  Trash2
+  Trash2,
+  FileDown
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -37,7 +38,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-export default function LibraryPage() {
+function LibraryContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
@@ -182,6 +183,105 @@ export default function LibraryPage() {
         await navigator.clipboard.writeText(combinedCitations);
         setSuccessMessage(`已复制 ${selectedIds.size} 条引用到剪贴板`);
       }
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError('批量导出失败: ' + err.message);
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Batch copy all formats
+  const handleBatchCopyAllFormats = async () => {
+    if (selectedIds.size === 0) return;
+
+    setIsExporting(true);
+    setError('');
+    setSuccessMessage('');
+    try {
+      const formats = ['apa', 'mla', 'chicago', 'harvard', 'vancouver', 'bibtex'];
+      const allCitations: Record<string, string[]> = {};
+
+      // Initialize formats array
+      formats.forEach(fmt => allCitations[fmt] = []);
+
+      // Fetch all formats for all selected items
+      for (const id of selectedIds) {
+        await Promise.all(formats.map(async (fmt) => {
+          const response = await fetch(`/api/literature/${id}/export?format=${fmt}`);
+          if (response.ok) {
+            allCitations[fmt].push(await response.text());
+          }
+        }));
+      }
+
+      // Combine all citations by format
+      let combinedText = `=== 批量文献引用 (${selectedIds.size} 篇) ===\n\n`;
+
+      for (const fmt of formats) {
+        if (allCitations[fmt].length > 0) {
+          const formatLabels: Record<string, string> = {
+            apa: 'APA',
+            mla: 'MLA',
+            chicago: 'Chicago',
+            harvard: 'Harvard',
+            vancouver: 'Vancouver',
+            bibtex: 'BibTeX'
+          };
+          combinedText += `--- ${formatLabels[fmt]} 格式 ---\n`;
+          combinedText += allCitations[fmt].join('\n\n');
+          combinedText += '\n\n';
+        }
+      }
+
+      await navigator.clipboard.writeText(combinedText);
+      setSuccessMessage(`已复制 ${selectedIds.size} 篇文献的所有格式到剪贴板`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError('批量复制失败: ' + err.message);
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Batch export all formats as files
+  const handleBatchExportAllFormats = async () => {
+    if (selectedIds.size === 0) return;
+
+    setIsExporting(true);
+    setError('');
+    setSuccessMessage('');
+    try {
+      const formats = ['apa', 'mla', 'chicago', 'harvard', 'vancouver', 'bibtex'];
+
+      for (const fmt of formats) {
+        const citations = await Promise.all(
+          Array.from(selectedIds).map(async (id) => {
+            const response = await fetch(`/api/literature/${id}/export?format=${fmt}`);
+            if (!response.ok) throw new Error(`Failed to export item ${id}`);
+            return await response.text();
+          })
+        );
+
+        const combinedCitations = citations.join('\n\n');
+        const extension = fmt === 'bibtex' ? '.bib' : '.txt';
+        const blob = new Blob([combinedCitations], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `citations_batch_${fmt}_${selectedIds.size}${extension}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        // Small delay to avoid browser blocking multiple downloads
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      setSuccessMessage(`已下载 ${selectedIds.size} 篇文献的 6 种格式`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
       setError('批量导出失败: ' + err.message);
@@ -651,6 +751,28 @@ export default function LibraryPage() {
               )}
 
               <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t">
+                {/* Quick Batch Actions */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBatchCopyAllFormats}
+                  disabled={isExporting || selectedIds.size === 0}
+                  title="复制所有 6 种引用格式"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  复制全部
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBatchExportAllFormats}
+                  disabled={isExporting || selectedIds.size === 0}
+                  title="下载所有 6 种引用格式"
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  导出全部
+                </Button>
+
                 {/* Batch Export */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -939,5 +1061,14 @@ export default function LibraryPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrapper component with Suspense boundary
+export default function LibraryPage() {
+  return (
+    <Suspense fallback={<LibraryPageSkeleton />}>
+      <LibraryContent />
+    </Suspense>
   );
 }

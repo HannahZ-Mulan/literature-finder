@@ -1,104 +1,152 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { RecommendationsPanel } from '@/components/recommendations-panel';
+import { Loader2, FileText, Upload, Clock, Sparkles, ArrowRight } from 'lucide-react';
 
-export default function Home() {
-  const { user, isLoading } = useAuth();
+interface Paper {
+  id: number;
+  title: string;
+  fileName: string;
+  createdAt: string;
+}
+
+export default function HomePage() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [recentPapers, setRecentPapers] = useState<Paper[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>加载中...</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    fetchRecentPapers();
+  }, []);
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      // Search academic databases instead of just library
-      router.push(`/search?query=${encodeURIComponent(searchQuery)}`);
+  const fetchRecentPapers = async () => {
+    try {
+      const response = await fetch('/api/papers');
+      const data = await response.json();
+
+      if (response.ok) {
+        setRecentPapers((data.papers || []).slice(0, 5));
+      }
+    } catch (error) {
+      console.error('Failed to load recent papers:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Literature Finder
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              智能文献查找助手
-            </p>
-            <p className="text-muted-foreground">
-              集成多个学术数据库，提供AI驱动的文献摘要、智能推荐和引用管理功能
-            </p>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            AI Paper Reader
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            上传英文学术论文，AI 帮你快速理解
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
+              onClick={() => router.push('/upload')}
+            >
+              <Upload className="w-5 h-5 mr-2" />
+              上传论文
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => router.push('/my-papers')}
+            >
+              <FileText className="w-5 h-5 mr-2" />
+              我的论文
+            </Button>
           </div>
 
-          {!user ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>开始使用</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  注册或登录以管理您的文献库
-                </p>
-                <div className="flex space-x-4">
-                  <Button onClick={() => router.push('/login')}>登录</Button>
-                  <Button variant="outline" onClick={() => router.push('/register')}>注册</Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>搜索文献</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex space-x-2">
-                  <Input
-                    placeholder="输入关键词搜索..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    className="flex-1"
-                  />
-                  <Button onClick={handleSearch}>搜索</Button>
-                </div>
-                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="p-3 border rounded-lg hover:bg-accent cursor-pointer text-center" onClick={() => router.push('/library')}>
-                    <p className="font-medium text-sm">我的库</p>
-                  </div>
-                  <div className="p-3 border rounded-lg hover:bg-accent cursor-pointer text-center" onClick={() => router.push('/notes')}>
-                    <p className="font-medium text-sm">我的笔记</p>
-                  </div>
-                  <div className="p-3 border rounded-lg hover:bg-accent cursor-pointer text-center" onClick={() => router.push('/reading-lists')}>
-                    <p className="font-medium text-sm">阅读列表</p>
-                  </div>
-                  <div className="p-3 border rounded-lg hover:bg-accent cursor-pointer text-center" onClick={() => router.push('/search')}>
-                    <p className="font-medium text-sm">搜索</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Feature highlights */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-8 max-w-2xl mx-auto">
+            <div className="text-center p-4">
+              <div className="text-3xl mb-2">📝</div>
+              <h3 className="font-medium mb-1">AI 中文解读</h3>
+              <p className="text-sm text-muted-foreground">一键生成中文总结</p>
+            </div>
+            <div className="text-center p-4">
+              <div className="text-3xl mb-2">🌐</div>
+              <h3 className="font-medium mb-1">段落翻译</h3>
+              <p className="text-sm text-muted-foreground">选中即可翻译难句</p>
+            </div>
+            <div className="text-center p-4">
+              <div className="text-3xl mb-2">💬</div>
+              <h3 className="font-medium mb-1">AI 助手</h3>
+              <p className="text-sm text-muted-foreground">随时提问论文内容</p>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Sidebar - Recommendations */}
-        <div className="space-y-6">
-          {user && <RecommendationsPanel limit={5} />}
-        </div>
+      {/* Recent Papers */}
+      <div className="container mx-auto px-4 pb-16">
+        <Card className="max-w-4xl mx-auto">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>最近上传</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/my-papers')}
+              >
+                查看全部
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            ) : recentPapers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="mb-4">还没有上传任何论文</p>
+                <Button onClick={() => router.push('/upload')}>
+                  <Upload className="w-4 h-4 mr-2" />
+                  上传第一篇论文
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentPapers.map((paper) => (
+                  <div
+                    key={paper.id}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => router.push(`/paper/${paper.id}`)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">{paper.title}</h4>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span className="truncate">{paper.fileName}</span>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{new Date(paper.createdAt).toLocaleDateString('zh-CN')}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost">
+                      <Sparkles className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

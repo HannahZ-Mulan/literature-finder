@@ -12,6 +12,11 @@ interface AnnotationPosition {
   width: number;
   height: number;
   rects: Array<{ x: number; y: number; width: number; height: number }>;
+  // 归一化坐标标志 (0-1 范围，相对于 PDF 原始 viewport)
+  normalized?: boolean;
+  // 保存时的 PDF 原始 viewport 尺寸
+  originalViewportWidth?: number;
+  originalViewportHeight?: number;
 }
 
 interface Annotation {
@@ -49,6 +54,8 @@ export function PDFViewerAnnotated({ url, literatureId, title }: PDFViewerAnnota
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // 存储 PDF 页面的原始 viewport 尺寸（scale=1.0 时）
+  const [baseViewport, setBaseViewport] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     loadPDF();
@@ -100,6 +107,10 @@ export function PDFViewerAnnotated({ url, literatureId, title }: PDFViewerAnnota
     if (!context) return;
 
     const viewport = page.getViewport({ scale });
+    // 保存原始 viewport (scale=1.0) 用于归一化坐标
+    const baseVp = page.getViewport({ scale: 1.0 });
+    setBaseViewport({ width: baseVp.width, height: baseVp.height });
+
     canvas.width = viewport.width;
     canvas.height = viewport.height;
 
@@ -140,12 +151,17 @@ export function PDFViewerAnnotated({ url, literatureId, title }: PDFViewerAnnota
   };
 
   const renderHighlights = (pageNum: number) => {
-    if (!textLayerRef.current) return;
+    if (!textLayerRef.current || !canvasRef.current) return;
     const pageAnnotations = annotations.filter((a) => a.page_number === pageNum);
 
     // Remove old annotations
     const oldAnnotations = textLayerRef.current.querySelectorAll('.annotation-overlay');
     oldAnnotations.forEach((h) => h.remove());
+
+    // Get current canvas dimensions for scaling
+    const canvas = canvasRef.current;
+    const currentWidth = canvas.width;
+    const currentHeight = canvas.height;
 
     pageAnnotations.forEach((annotation) => {
       if (annotation.annotation_type === 'highlight' && annotation.position) {
@@ -156,10 +172,26 @@ export function PDFViewerAnnotated({ url, literatureId, title }: PDFViewerAnnota
           const highlightDiv = document.createElement('div');
           highlightDiv.className = 'annotation-overlay annotation-highlight';
           highlightDiv.style.position = 'absolute';
-          highlightDiv.style.left = `${rect.x}px`;
-          highlightDiv.style.top = `${rect.y}px`;
-          highlightDiv.style.width = `${rect.width}px`;
-          highlightDiv.style.height = `${rect.height}px`;
+
+          // 如果是归一化坐标，需要根据当前缩放还原
+          if (pos.normalized && baseViewport) {
+            const scaledX = rect.x * currentWidth;
+            const scaledY = rect.y * currentHeight;
+            const scaledWidth = rect.width * currentWidth;
+            const scaledHeight = rect.height * currentHeight;
+
+            highlightDiv.style.left = `${scaledX}px`;
+            highlightDiv.style.top = `${scaledY}px`;
+            highlightDiv.style.width = `${scaledWidth}px`;
+            highlightDiv.style.height = `${scaledHeight}px`;
+          } else {
+            // 兼容旧的未归一化坐标
+            highlightDiv.style.left = `${rect.x}px`;
+            highlightDiv.style.top = `${rect.y}px`;
+            highlightDiv.style.width = `${rect.width}px`;
+            highlightDiv.style.height = `${rect.height}px`;
+          }
+
           highlightDiv.style.backgroundColor = annotation.color;
           highlightDiv.style.opacity = '0.3';
           highlightDiv.style.pointerEvents = 'auto';
@@ -183,9 +215,24 @@ export function PDFViewerAnnotated({ url, literatureId, title }: PDFViewerAnnota
           const underlineDiv = document.createElement('div');
           underlineDiv.className = 'annotation-overlay annotation-underline';
           underlineDiv.style.position = 'absolute';
-          underlineDiv.style.left = `${rect.x}px`;
-          underlineDiv.style.top = `${rect.y + rect.height - 2}px`;
-          underlineDiv.style.width = `${rect.width}px`;
+
+          // 如果是归一化坐标，需要根据当前缩放还原
+          if (pos.normalized && baseViewport) {
+            const scaledX = rect.x * currentWidth;
+            const scaledY = rect.y * currentHeight;
+            const scaledWidth = rect.width * currentWidth;
+            const scaledHeight = rect.height * currentHeight;
+
+            underlineDiv.style.left = `${scaledX}px`;
+            underlineDiv.style.top = `${scaledY + scaledHeight - 2}px`;
+            underlineDiv.style.width = `${scaledWidth}px`;
+          } else {
+            // 兼容旧的未归一化坐标
+            underlineDiv.style.left = `${rect.x}px`;
+            underlineDiv.style.top = `${rect.y + rect.height - 2}px`;
+            underlineDiv.style.width = `${rect.width}px`;
+          }
+
           underlineDiv.style.height = '2px';
           underlineDiv.style.backgroundColor = annotation.color;
           underlineDiv.style.pointerEvents = 'auto';
@@ -202,29 +249,48 @@ export function PDFViewerAnnotated({ url, literatureId, title }: PDFViewerAnnota
   const handleTextSelection = () => {
     const selection = window.getSelection();
     const text = selection?.toString().trim();
-    if (text && selection?.rangeCount > 0 && containerRef.current) {
+    if (text && selection && selection.rangeCount && selection.rangeCount > 0 && containerRef.current && baseViewport) {
       const range = selection.getRangeAt(0);
       const rects = range.getClientRects();
       const containerRect = containerRef.current.getBoundingClientRect();
 
       if (rects.length > 0) {
-        // Convert each rect to relative coordinates
-        const relativeRects: Array<{ x: number; y: number; width: number; height: number }> = [];
+        // 获取当前 canvas 的实际尺寸
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const currentWidth = canvas.width;
+        const currentHeight = canvas.height;
+
+        // 归一化坐标到 0-1 范围（相对于 PDF 原始尺寸）
+        const normalizedRects: Array<{ x: number; y: number; width: number; height: number }> = [];
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
         for (let i = 0; i < rects.length; i++) {
           const rect = rects[i];
+          // 转换为相对于容器的坐标
           const x = rect.left - containerRect.left;
           const y = rect.top - containerRect.top;
           const width = rect.width;
           const height = rect.height;
 
-          relativeRects.push({ x, y, width, height });
+          // 归一化到 0-1 范围（除以当前显示尺寸，再乘以原始尺寸比例）
+          const normalizedX = (x / currentWidth) * baseViewport.width;
+          const normalizedY = (y / currentHeight) * baseViewport.height;
+          const normalizedWidth = (width / currentWidth) * baseViewport.width;
+          const normalizedHeight = (height / currentHeight) * baseViewport.height;
 
-          minX = Math.min(minX, x);
-          minY = Math.min(minY, y);
-          maxX = Math.max(maxX, x + width);
-          maxY = Math.max(maxY, y + height);
+          // 保存归一化坐标（相对于原始尺寸的像素值）
+          normalizedRects.push({
+            x: normalizedX / baseViewport.width,
+            y: normalizedY / baseViewport.height,
+            width: normalizedWidth / baseViewport.width,
+            height: normalizedHeight / baseViewport.height,
+          });
+
+          minX = Math.min(minX, normalizedX / baseViewport.width);
+          minY = Math.min(minY, normalizedY / baseViewport.height);
+          maxX = Math.max(maxX, (normalizedX + normalizedWidth) / baseViewport.width);
+          maxY = Math.max(maxY, (normalizedY + normalizedHeight) / baseViewport.height);
         }
 
         const position: AnnotationPosition = {
@@ -232,7 +298,10 @@ export function PDFViewerAnnotated({ url, literatureId, title }: PDFViewerAnnota
           y: minY,
           width: maxX - minX,
           height: maxY - minY,
-          rects: relativeRects,
+          rects: normalizedRects,
+          normalized: true,
+          originalViewportWidth: baseViewport.width,
+          originalViewportHeight: baseViewport.height,
         };
 
         setSelectedText(text);

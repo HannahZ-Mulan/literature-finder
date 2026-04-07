@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +53,7 @@ export function LiteratureNoteSidebar({
   const [isToRead, setIsToRead] = useState(false);
   const [readingProgress, setReadingProgress] = useState('');
   const [saving, setSaving] = useState(false);
+  const isMounted = useRef(true);
 
   // Load data when sidebar opens
   useEffect(() => {
@@ -60,6 +61,9 @@ export function LiteratureNoteSidebar({
       loadNotes();
       loadMarks();
     }
+    return () => {
+      isMounted.current = false;
+    };
   }, [isOpen]);
 
   async function loadNotes() {
@@ -67,7 +71,9 @@ export function LiteratureNoteSidebar({
       const response = await fetch(`/api/literature/${literatureId}/notes`);
       if (response.ok) {
         const data = await response.json();
-        setNotes(data.notes || []);
+        if (isMounted.current) {
+          setNotes(data.notes || []);
+        }
       }
     } catch (error) {
       console.error('Failed to load notes:', error);
@@ -79,10 +85,12 @@ export function LiteratureNoteSidebar({
       const response = await fetch(`/api/notes?literatureId=${literatureId}`);
       if (response.ok) {
         const data = await response.json();
-        setIsFavorite(data.is_favorite || false);
-        setIsLiked(data.is_liked || false);
-        setIsToRead(data.is_to_read || false);
-        setReadingProgress(data.reading_progress?.toString() || '');
+        if (isMounted.current) {
+          setIsFavorite(data.is_favorite || false);
+          setIsLiked(data.is_liked || false);
+          setIsToRead(data.is_to_read || false);
+          setReadingProgress(data.reading_progress?.toString() || '');
+        }
       }
     } catch (error) {
       console.error('Failed to load marks:', error);
@@ -106,28 +114,36 @@ export function LiteratureNoteSidebar({
 
       if (response.ok) {
         const data = await response.json();
-        setNotes([data.note, ...notes]);
-        setNewNote('');
-        toast({
-          title: "笔记已保存",
-          description: "你的笔记已成功保存",
-        });
+        if (isMounted.current) {
+          setNotes([data.note, ...notes]);
+          setNewNote('');
+          toast({
+            title: "笔记已保存",
+            description: "你的笔记已成功保存",
+          });
+        }
       } else {
-        const error = await response.json();
+        if (isMounted.current) {
+          const error = await response.json();
+          toast({
+            title: "保存失败",
+            description: error.error || "请稍后重试",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      if (isMounted.current) {
         toast({
           title: "保存失败",
-          description: error.error || "请稍后重试",
+          description: "请稍后重试",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      toast({
-        title: "保存失败",
-        description: "请稍后重试",
-        variant: "destructive",
-      });
     } finally {
-      setSaving(false);
+      if (isMounted.current) {
+        setSaving(false);
+      }
     }
   }
 
@@ -141,7 +157,7 @@ export function LiteratureNoteSidebar({
         body: JSON.stringify({ content: editContent }),
       });
 
-      if (response.ok) {
+      if (response.ok && isMounted.current) {
         const data = await response.json();
         setNotes(notes.map(n => n.id === noteId ? { ...n, content: data.note.content } : n));
         setEditingId(null);
@@ -150,6 +166,8 @@ export function LiteratureNoteSidebar({
           title: "笔记已更新",
           description: "笔记更新成功",
         });
+      } else if (!isMounted.current) {
+        return;
       } else {
         const error = await response.json();
         toast({
@@ -159,11 +177,13 @@ export function LiteratureNoteSidebar({
         });
       }
     } catch (error) {
-      toast({
-        title: "更新失败",
-        description: "请稍后重试",
-        variant: "destructive",
-      });
+      if (isMounted.current) {
+        toast({
+          title: "更新失败",
+          description: "请稍后重试",
+          variant: "destructive",
+        });
+      }
     }
   }
 
@@ -173,12 +193,14 @@ export function LiteratureNoteSidebar({
         method: 'DELETE',
       });
 
-      if (response.ok) {
+      if (response.ok && isMounted.current) {
         setNotes(notes.filter(n => n.id !== noteId));
         toast({
           title: "笔记已删除",
           description: "笔记删除成功",
         });
+      } else if (!isMounted.current) {
+        return;
       } else {
         const error = await response.json();
         toast({
@@ -188,11 +210,13 @@ export function LiteratureNoteSidebar({
         });
       }
     } catch (error) {
-      toast({
-        title: "删除失败",
-        description: "请稍后重试",
-        variant: "destructive",
-      });
+      if (isMounted.current) {
+        toast({
+          title: "删除失败",
+          description: "请稍后重试",
+          variant: "destructive",
+        });
+      }
     }
   }
 
@@ -212,11 +236,13 @@ export function LiteratureNoteSidebar({
         }),
       });
 
-      if (response.ok) {
+      if (response.ok && isMounted.current) {
         toast({
           title: "保存成功",
           description: "标记和进度已更新",
         });
+      } else if (!isMounted.current) {
+        return;
       } else {
         const error = await response.json();
         toast({
@@ -226,11 +252,13 @@ export function LiteratureNoteSidebar({
         });
       }
     } catch (error) {
-      toast({
-        title: "保存失败",
-        description: "请稍后重试",
-        variant: "destructive",
-      });
+      if (isMounted.current) {
+        toast({
+          title: "保存失败",
+          description: "请稍后重试",
+          variant: "destructive",
+        });
+      }
     }
   }
 

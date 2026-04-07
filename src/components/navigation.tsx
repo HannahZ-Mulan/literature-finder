@@ -15,7 +15,8 @@ export function Navigation() {
             <Link href="/" className="text-xl font-bold text-primary">
               Literature Finder
             </Link>
-            {user && (
+            {/* 测试模式或已登录时显示导航链接 */}
+            {(user || !user) && (
               <div className="flex space-x-4">
                 <Link href="/search" className="text-sm hover:text-primary transition-colors">
                   学术搜索
@@ -32,6 +33,9 @@ export function Navigation() {
                 <Link href="/statistics" className="text-sm hover:text-primary transition-colors">
                   统计分析
                 </Link>
+                <Link href="/upload" className="text-sm hover:text-primary transition-colors">
+                  上传论文
+                </Link>
               </div>
             )}
           </div>
@@ -46,18 +50,9 @@ export function Navigation() {
                 </Button>
               </>
             ) : (
-              <>
-                <Link href="/login">
-                  <Button variant="ghost" size="sm">
-                    登录
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button size="sm">
-                    注册
-                  </Button>
-                </Link>
-              </>
+              <span className="text-xs text-muted-foreground">
+                测试模式
+              </span>
             )}
           </div>
         </div>

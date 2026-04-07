@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -27,12 +27,16 @@ export function QuickNoteDialog({
   const [isToRead, setIsToRead] = useState(false);
   const [readingProgress, setReadingProgress] = useState('');
   const [saving, setSaving] = useState(false);
+  const isMounted = useRef(true);
 
   // Load existing data when dialog opens
   useEffect(() => {
     if (open && literatureId) {
       loadNoteData();
     }
+    return () => {
+      isMounted.current = false;
+    };
   }, [open, literatureId]);
 
   async function loadNoteData() {
@@ -40,11 +44,13 @@ export function QuickNoteDialog({
       const response = await fetch(`/api/notes?literatureId=${literatureId}`);
       if (response.ok) {
         const data = await response.json();
-        setNote(data.notes || '');
-        setIsFavorite(data.is_favorite || false);
-        setIsLiked(data.is_liked || false);
-        setIsToRead(data.is_to_read || false);
-        setReadingProgress(data.reading_progress?.toString() || '');
+        if (isMounted.current) {
+          setNote(data.notes || '');
+          setIsFavorite(data.is_favorite || false);
+          setIsLiked(data.is_liked || false);
+          setIsToRead(data.is_to_read || false);
+          setReadingProgress(data.reading_progress?.toString() || '');
+        }
       }
     } catch (error) {
       console.error('Failed to load note:', error);
@@ -69,22 +75,28 @@ export function QuickNoteDialog({
       });
 
       if (response.ok) {
-        toast({
-          title: "保存成功",
-          description: "笔记和标记已更新",
-        });
-        onOpenChange(false);
+        if (isMounted.current) {
+          toast({
+            title: "保存成功",
+            description: "笔记和标记已更新",
+          });
+          onOpenChange(false);
+        }
       } else {
         throw new Error('Failed to save');
       }
     } catch (error) {
-      toast({
-        title: "保存失败",
-        description: "请稍后重试",
-        variant: "destructive",
-      });
+      if (isMounted.current) {
+        toast({
+          title: "保存失败",
+          description: "请稍后重试",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setSaving(false);
+      if (isMounted.current) {
+        setSaving(false);
+      }
     }
   }
 

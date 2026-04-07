@@ -22,17 +22,140 @@ export type CitationFormat = 'apa' | 'mla' | 'chicago' | 'harvard' | 'vancouver'
  * Journal abbreviation to full name mapping
  */
 const JOURNAL_ABBREVIATIONS: Record<string, string> = {
+  // ACM (Association for Computing Machinery)
   'PACM on Human-Computer Interaction': 'Proceedings of the ACM on Human-Computer Interaction',
   'PACM on Human-Computer Interaction 6': 'Proceedings of the ACM on Human-Computer Interaction',
-  'J Artif Intell Res': 'Journal of Artificial Intelligence Research',
   'J ACM': 'Journal of the ACM',
-  // Add more mappings as needed
+  'ACM Trans Graph': 'ACM Transactions on Graphics',
+  'ACM Trans Softw Eng Methodol': 'ACM Transactions on Software Engineering and Methodology',
+  'ACM SIGPLAN Not': 'ACM SIGPLAN Notices',
+  'ACM Comput Surv': 'ACM Computing Surveys',
+  'ACM Trans Comput Hum Interact': 'ACM Transactions on Computer-Human Interaction',
+  'ACM Trans Inf Syst Secur': 'ACM Transactions on Information and System Security',
+  'ACM Trans Program Lang Syst': 'ACM Transactions on Programming Languages and Systems',
+
+  // AI & Machine Learning
+  'J Artif Intell Res': 'Journal of Artificial Intelligence Research',
+  'Artif Intell': 'Artificial Intelligence',
+  'Mach Learn': 'Machine Learning',
+  'J Mach Learn Res': 'Journal of Machine Learning Research',
+  'Neural Comput': 'Neural Computation',
+  'Neural Netw': 'Neural Networks',
+  'IEEE Trans Neural Netw Learn Syst': 'IEEE Transactions on Neural Networks and Learning Systems',
+  'IEEE Trans Pattern Anal Mach Intell': 'IEEE Transactions on Pattern Analysis and Machine Intelligence',
+  'Int J Comput Vis': 'International Journal of Computer Vision',
+  'Comput Vis Image Underst': 'Computer Vision and Image Understanding',
+  'Pattern Recognit': 'Pattern Recognition',
+  'Pattern Recognit Lett': 'Pattern Recognition Letters',
+
+  // NLP
+  'Assoc Comput Linguist': 'Association for Computational Linguistics',
+  'ACL': 'Association for Computational Linguistics',
+  'Trans Assoc Comput Linguist': 'Transactions of the Association for Computational Linguistics',
+  'Comput Linguist': 'Computational Linguistics',
+  'J Nat Lang Eng': 'Journal of Natural Language Engineering',
+  'Lang Resour Eval': 'Language Resources and Evaluation',
+
+  // Software Engineering
+  'IEEE Trans Softw Eng': 'IEEE Transactions on Software Engineering',
+  'Softw Pract Exp': 'Software: Practice and Experience',
+  'J Syst Softw': 'Journal of Systems and Software',
+  'Inf Softw Technol': 'Information and Software Technology',
+  'Autom Softw Eng': 'Automated Software Engineering',
+  'Softw Test Verif Reliab': 'Software Testing, Verification and Reliability',
+  'Empir Softw Eng': 'Empirical Software Engineering',
+  'Requir Eng': 'Requirements Engineering',
+
+  // Databases & Information Systems
+  'ACM Trans Database Syst': 'ACM Transactions on Database Systems',
+  'VLDB J': 'The VLDB Journal',
+  'IEEE Trans Knowl Data Eng': 'IEEE Transactions on Knowledge and Data Engineering',
+  'Inf Syst': 'Information Systems',
+  'Data Knowl Eng': 'Data & Knowledge Engineering',
+  'Inf Process Manag': 'Information Processing & Management',
+
+  // Computer Networks
+  'IEEE ACM Trans Netw': 'IEEE/ACM Transactions on Networking',
+  'Comput Netw': 'Computer Networks',
+  'IEEE Netw': 'IEEE Network',
+  'Int J Commun Syst': 'International Journal of Communication Systems',
+
+  // Security
+  'IEEE Trans Dependable Secur Comput': 'IEEE Transactions on Dependable and Secure Computing',
+  'Comput Secur': 'Computers & Security',
+  'J Comput Secur': 'Journal of Computer Security',
+
+  // Human-Computer Interaction
+  'Int J Hum Comput Stud': 'International Journal of Human-Computer Studies',
+  'Hum Comput Interact': 'Human-Computer Interaction',
+  'Interact Comput': 'Interacting with Computers',
+  'Behav Inf Technol': 'Behaviour & Information Technology',
+
+  // Web & Internet
+  'ACM Trans Web': 'ACM Transactions on the Web',
+  'World Wide Web': 'World Wide Web',
+  'Web Semant': 'Web Semantics: Science, Services and Agents on the World Wide Web',
+  'Internet Res': 'Internet Research',
+
+  // Theory
+  'SIAM J Comput': 'SIAM Journal on Computing',
+  'Theor Comput Sci': 'Theoretical Computer Science',
+  'Inf Comput': 'Information and Computation',
+  'J Comput Syst Sci': 'Journal of Computer and System Sciences',
+  'ACM Symp Theory Comput': 'ACM Symposium on Theory of Computing',
+
+  // Programming Languages
+  'ACM Program Lang': 'ACM Transactions on Programming Languages',
+  'Sci Comput Program': 'Science of Computer Programming',
+  'J Funct Program': 'Journal of Functional Programming',
+  'J Log Program': 'Journal of Logic Programming',
+  'High Order Symb Comput': 'Higher-Order and Symbolic Computation',
+
+  // Bioinformatics & Computational Biology
+  'Bioinformatics': 'Bioinformatics',
+  'BMC Bioinformatics': 'BMC Bioinformatics',
+  'PLoS Comput Biol': 'PLOS Computational Biology',
+  'IEEE ACM Trans Comput Biol Bioinform': 'IEEE/ACM Transactions on Computational Biology and Bioinformatics',
+
+  // General Computer Science
+  'Science': 'Science',
+  'Nature': 'Nature',
+  'Commun ACM': 'Communications of the ACM',
+  'Computer': 'Computer',
+  'IEEE Comput Graph Appl': 'IEEE Computer Graphics and Applications',
+  'IEEE Comput': 'IEEE Computer',
+
+  // Physics & arXiv
+  'Phys Rev Lett': 'Physical Review Letters',
+  'Phys Rev': 'Physical Review',
+  'Nat Methods': 'Nature Methods',
+  'Nat Commun': 'Nature Communications',
+
+  // Medicine & Healthcare Informatics
+  'J Am Med Inform Assoc': 'Journal of the American Medical Informatics Association',
+  'Int J Med Inform': 'International Journal of Medical Informatics',
+  'BMJ': 'BMJ',
+  'Lancet': 'The Lancet',
+  'N Engl J Med': 'New England Journal of Medicine',
+
+  // Psychology & Cognitive Science
+  'Cogn Sci': 'Cognitive Science',
+  'J Exp Psychol': 'Journal of Experimental Psychology',
+  'Psychol Rev': 'Psychological Review',
+  'Psychol Sci': 'Psychological Science',
+
+  // Education
+  'Comput Educ': 'Computers & Education',
+  'J Educ Comput Res': 'Journal of Educational Computing Research',
+  'IEEE Trans Learn Technol': 'IEEE Transactions on Learning Technologies',
 };
 
 /**
  * Expand journal abbreviation to full name
  */
 function expandJournalName(name: string): string {
+  if (!name) return '';
+
   // Direct match
   if (JOURNAL_ABBREVIATIONS[name]) {
     return JOURNAL_ABBREVIATIONS[name];
@@ -46,6 +169,25 @@ function expandJournalName(name: string): string {
   }
 
   return name;
+}
+
+/**
+ * Clean and normalize strings (remove extra whitespace, special characters)
+ */
+function cleanString(str: string): string {
+  return str
+    .trim()
+    .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
+    .replace(/\u200B/g, '') // Remove zero-width space
+    .replace(/[\u201C\u201D\u201E\u201F\u275D\u275E]/g, '"') // Normalize quotes
+    .replace(/[\u2018\u2019\u201A\u201B\u275B\u275C]/g, "'"); // Normalize apostrophes
+}
+
+/**
+ * Safe check if value is defined and non-empty
+ */
+function isDefined<T>(value: T | undefined | null | ''): value is T {
+  return value !== undefined && value !== null && value !== '';
 }
 
 /**
@@ -101,7 +243,9 @@ function parseJournalField(journal: string | undefined): {
  * Convert title to sentence case (only first letter and proper nouns capitalized)
  * For academic citations, most words should be lowercase
  */
-function toSentenceCase(title: string): string {
+function toSentenceCase(title: string | undefined): string {
+  if (!title) return '';
+
   // Keep the first letter capitalized
   let result = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
 
@@ -188,23 +332,48 @@ function toVancouverTitleCase(name: string | undefined): string {
  * Fetches pages from DOI if not provided
  */
 async function toCSLJSON(literature: LiteratureForCitation) {
-  // Parse authors
+  // Parse authors with improved edge case handling
   const author = literature.authors.map(a => {
     const parts = a.name.trim();
 
+    // Skip "et al." or similar markers
+    if (/^(et\s+al\.?|etc\.?|and others)$/i.test(parts)) {
+      return null;
+    }
+
     // Check if format is "Last, First" or "First Last"
     if (parts.includes(',')) {
-      const [lastName, firstPart] = parts.split(',').map(p => p.trim());
-      const given = firstPart;
-      const family = lastName;
-      return { given, family };
+      const commaParts = parts.split(',').map(p => p.trim());
+      const lastName = commaParts[0];
+      const firstPart = commaParts.slice(1).join(', '); // Handle cases like "Last, First, Jr."
+
+      return { given: firstPart, family: lastName };
     } else {
       const nameParts = parts.split(/\s+/);
-      const family = nameParts[nameParts.length - 1];
-      const given = nameParts.slice(0, -1).join(' ');
+
+      // Handle single name (e.g., "Madonna" or organizations)
+      if (nameParts.length === 1) {
+        return { given: '', family: nameParts[0] };
+      }
+
+      // Handle compound surnames with prefixes (van, von, de, da, etc.)
+      const prefixes = ['van', 'von', 'de', 'der', 'di', 'da', 'le', 'la', 'del', 'della', 'des', 'du', 'bin', 'al'];
+      let familyStartIndex = nameParts.length - 1;
+
+      // Check if the last two parts form a compound surname
+      if (nameParts.length >= 2) {
+        const potentialPrefix = nameParts[nameParts.length - 2]?.toLowerCase();
+        if (prefixes.includes(potentialPrefix)) {
+          familyStartIndex = nameParts.length - 2;
+        }
+      }
+
+      const family = nameParts.slice(familyStartIndex).join(' ');
+      const given = nameParts.slice(0, familyStartIndex).join(' ');
+
       return { given, family };
     }
-  });
+  }).filter(a => a !== null); // Remove null entries (et al.)
 
   // Parse journal field to extract journal name, volume, issue
   const { journalName, volume: parsedVolume, issue: parsedIssue } = parseJournalField(literature.journal);
@@ -219,11 +388,13 @@ async function toCSLJSON(literature: LiteratureForCitation) {
   if (literature.doi) {
     try {
       const doiMetadata = await fetchDOIMetadata(literature.doi);
-      pages = pages || extractPages(doiMetadata);
-      doiDate = doiMetadata.published_date;
-      doiJournalName = doiMetadata.journal_name;
-      doiVolume = doiMetadata.volume;
-      doiIssue = doiMetadata.issue;
+      if (doiMetadata) {
+        pages = pages || extractPages(doiMetadata);
+        doiDate = doiMetadata.published_date;
+        doiJournalName = doiMetadata.journal_name;
+        doiVolume = doiMetadata.volume;
+        doiIssue = doiMetadata.issue;
+      }
     } catch (e) {
       // Silently fail if DOI fetch fails
       console.debug('Failed to fetch metadata from DOI:', e);

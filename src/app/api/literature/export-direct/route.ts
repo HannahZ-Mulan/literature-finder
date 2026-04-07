@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { formatCitation } from '@/lib/citation/format-citation-js';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // Validation schema for direct export
 const directExportSchema = z.object({
   title: z.string(),

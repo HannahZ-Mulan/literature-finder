@@ -6,6 +6,229 @@
 
 ---
 
+## Last Updated
+- Timestamp: 2026-04-02 (AI功能修复)
+- Status: **AI中文解读和对话功能已修复！**
+  - ✅ 修复上传API：PDF提取失败时正确标记为未完成
+  - ✅ 添加空内容验证：AI功能检查extractedText是否为空
+  - ✅ 改进错误提示：清晰告知用户内容和解决方案
+  - ✅ 测试成功：有内容的论文AI分析正常工作
+  - ✅ DeepSeek/Zhipu API密钥已配置
+
+---
+
+## 已知问题
+- ⚠️ 旧数据（如论文17）的extractedText为空，需要重新上传PDF
+- ⚠️ 扫描版PDF无法提取文本，需使用"粘贴文本"功能
+
+---
+
+## 优化详情 (2026-04-02)
+
+### AI功能修复
+
+#### 问题分析
+用户反映AI中文解读和对话功能不工作，只给出浅薄的回复。经诊断发现：
+1. **空内容问题**：部分论文（如论文17）的`extractedText`为空字符串
+2. **错误状态标记**：这些论文仍被标记为`isComplete: true`
+3. **AI收到空内容**：AI功能直接使用空的`extractedText`，导致泛泛而谈的回复
+4. **缺乏验证**：上传和AI路由没有检查内容是否为空
+
+#### 解决方案
+
+**1. 修复上传API** (`src/app/api/papers/upload/route.ts:58-88`)
+   - ✅ 添加文本长度验证（至少10个字符）
+   - ✅ 提取失败时标记`isComplete: false`（而非true）
+   - ✅ 记录详细的错误日志
+   - ✅ 保留错误信息用于调试
+
+**2. 添加AI聊天验证** (`src/app/api/papers/[id]/chat/route.ts:49-73`)
+   - ✅ 检查`extractedText`是否为空或少于50字符
+   - ✅ 返回清晰的错误消息和解决建议
+   - ✅ 显示论文状态（ID、文件名、文本长度）
+
+**3. 添加AI摘要验证** (`src/app/api/papers/[id]/summary/route.ts:67-73`)
+   - ✅ 同样的空内容检查
+   - ✅ 返回中文错误消息
+   - ✅ 防止AI处理空内容
+
+#### 测试结果
+
+**论文20（有内容）：**
+- ✅ AI对话正常工作
+- ✅ DeepSeek提供详细的回答
+- ✅ 回复基于实际论文内容（研究问题、方法等）
+
+**论文17（空内容）：**
+- ✅ 显示清晰的错误消息
+- ✅ 告知用户可能的原因（扫描版、提取失败等）
+- ✅ 提供解决建议（重新上传、粘贴文本等）
+
+#### API密钥配置
+```env
+AI_PROVIDER=zhipu
+ZHIPU_API_KEY=*** (已配置)
+DEEPSEEK_API_KEY=*** (已配置)
+```
+
+---
+
+## 优化详情 (2026-04-02) - PDF读取修复
+
+### PDF读取问题修复完成
+
+#### 问题分析
+之前发现PDF上传后无法读取文本的问题，经诊断发现：
+1. **数据库schema不匹配**：前端期待的字段（`totalPages`, `extractedPages`, `extractionMethod`）在schema中不存在
+2. **UI过于复杂**：前端代码包含复杂的并行处理UI，但后端实际上使用简单的pdf-parse提取器
+3. **架构不一致**：前端期待并行提取进度，后端只提供简单的完成状态
+
+#### 解决方案
+
+**1. 简化前端上传页面** (`src/app/upload/page.tsx`)
+   - ✅ 移除 `PagePreview` 接口和 `pages` 状态
+   - ✅ 简化 `Paper` 接口，移除不存在的字段
+   - ✅ 简化轮询函数，只检查 `isComplete` 状态
+   - ✅ 移除复杂的页面预览UI和进度百分比计算
+   - ✅ 更新页面标题和描述，移除"并行提取"引用
+   - ✅ 添加简单的提取状态显示
+
+**2. 保持后端简单可靠**
+   - ✅ 继续使用 `pdf-parse@1.1.1` (稳定版本)
+   - ✅ 继续使用独立脚本 `scripts/extract-pdf-text.js`
+   - ✅ 继续使用异步提取模式（不阻塞响应）
+   - ✅ 数据库schema保持不变（简洁有效）
+
+#### 测试验证
+
+**测试命令：**
+```bash
+curl -X POST http://localhost:3000/api/papers/upload \
+  -F "file=@uploads/1772810494535-CurryEtalProsocialSystematicReview.pdf" \
+  -F "title=Test PDF Upload"
+```
+
+**测试结果：**
+- ✅ 文件上传成功（1.36 MB）
+- ✅ PDF文本提取成功：
+  - Pages: 10
+  - Characters: 65,957
+  - Method: pdf-parse (via child process)
+- ✅ 数据库更新成功
+- ✅ API响应正常（Paper ID: 20）
+
+**服务器日志：**
+```
+[Upload] Starting upload: 1772810494535-CurryEtalProsocialSystematicReview.pdf (1.36 MB)
+[Upload] File saved: C:\Users\ASUS\Desktop\Project\literature-finder\uploads\1775111542125-...
+[AsyncParse] Starting extraction for ID=20
+[PDF Extractor] Starting extraction for: ...
+[PDF Extractor] ✅ Success:
+  - Pages: 10
+  - Characters: 65957
+  - Method: pdf-parse (via child process)
+[AsyncParse] ✅ Complete for ID=20:
+  - Pages: 10
+  - Characters: 65957
+  - Method: pdf-parse
+```
+
+#### 当前状态
+- ✅ **开发服务器**: 运行在 http://localhost:3000
+- ✅ **PDF提取器**: pdf-parse@1.1.1 (稳定可靠)
+- ✅ **上传功能**: 完全正常工作
+- ✅ **文本提取**: 完全正常工作
+- ✅ **数据库**: SQLite (sqlite.db)
+
+#### 使用方法
+1. 访问上传页面: http://localhost:3000/upload
+2. 选择PDF文件或粘贴文本
+3. 点击"Upload Paper"
+4. 等待文本提取完成（自动跳转到论文列表）
+5. 访问论文详情查看AI分析和对话功能
+
+#### 技术栈
+- **PDF提取**: pdf-parse@1.1.1
+- **数据库**: SQLite + Drizzle ORM
+- **后端**: Next.js 14 API Routes
+- **前端**: Next.js 14 + React + Tailwind CSS
+
+---
+
+## 优化详情 (2026-03-09)
+
+### AI解读和对话功能深度优化
+
+#### 问题分析
+上次测试发现AI解读文献和与AI对话功能存在以下问题：
+1. 解读停留于表面，内容浅层且缺乏深度
+2. 对话功能使用简单Mock模式，只有3个预设回答
+3. 提示词缺少批判性思维和深度分析要求
+4. 缺乏与现有工作的对比和创新点分析
+
+#### 优化方案
+
+**1. 增强解读提示词** (`src/lib/ai/prompts.ts`)
+   - 添加专家级学术分析师角色定义
+   - 增加创新点分析要求（理论创新、实践进展、与现有方法的区别）
+   - 增加实验设计深度评估（具体算法名称、技术组件、理论基础）
+   - 增加批判性评估要求（优势、局限性、替代视角）
+   - 要求精确提取领域术语、具体指标和数字
+   - 强调"不说空话"原则，要求具体而非泛泛而谈
+
+**2. 重构对话系统提示词** (`src/lib/ai/openai.ts`, `src/lib/ai/deepseek.ts`)
+   - 设计专业的学术研究助手角色
+   - 六大核心指导原则：
+     1. **精确具体**：引用论文原文，使用确切术语和数字
+     2. **提供证据**：引用具体部分，解释作者选择理由
+     3. **批判思维**：不限于总结，分析优缺点和替代观点
+     4. **透明度**：明确说明哪些信息可用、哪些不可用
+     5. **适当深度**：提供详细解释，使用例子和类比
+     6. **学术严谨**：客观平衡，承认不确定性，避免夸大
+   - 增加响应token限制（从1000增加到1500）
+
+**3. 改进对话实现** (`src/app/api/papers/[id]/chat/route.ts`)
+   - 移除简单的Mock模式（仅3个预设回答）
+   - 集成AIManager进行真实AI对话
+   - 添加智能降级方案：
+     - 优先使用真实AI（OpenAI/DeepSeek）
+     - AI不可用时提供有用的反馈信息
+     - 引导用户配置API密钥以获得完整功能
+   - 基于实际论文内容提供基本信息
+
+#### 技术实现
+
+**修改的文件：**
+1. `src/lib/ai/prompts.ts` - 增强getExtractionPrompt提示词
+2. `src/lib/ai/openai.ts` - 重构chatWithPaper系统提示词
+3. `src/lib/ai/deepseek.ts` - 重构chatWithPaper系统提示词
+4. `src/app/api/papers/[id]/chat/route.ts` - 集成真实AI功能，添加智能降级
+
+#### 编译测试
+- ✅ 编译成功，无错误
+- ✅ 所有API路由正常生成
+
+#### 预期效果
+1. **AI解读更深入**：
+   - 提取具体的研究问题、方法、结果
+   - 分析创新点和贡献
+   - 评估实验设计的严谨性
+   - 讨论局限性和未来方向
+
+2. **AI对话更专业**：
+   - 基于论文内容提供证据支持
+   - 进行批判性分析而非简单总结
+   - 解释技术概念和术语
+   - 讨论论文在领域中的位置
+   - 提供实用的研究建议
+
+3. **用户体验提升**：
+   - 即使没有配置API密钥也能获得有用反馈
+   - 清晰的配置指引
+   - 智能降级确保功能始终可用
+
+---
+
 ## User Story Progress
 
 | ID | Title | Status | Notes |
@@ -132,18 +355,374 @@
 
 **Phase 1 MVP 已完成！** 🎉
 
-可选的后续改进：
-- PDF 注释功能优化（位置精确渲染）
-- AI 推荐算法优化（引入更多特征）
+**2026-03-04 产品策略优化** - 针对普通用户和学术用户的差异化体验
+
+### 核心功能优化 (方案 1)
+- ✅ PDF 注释位置精确渲染（归一化坐标系统）
+- ✅ AI 推荐算法优化（阅读活动深度加权 + 时间衰减）
+- ✅ 引用格式优化（期刊缩写映射扩展到 90+，作者解析改进）
+
+### 产品策略调整
+- ✅ 创建产品策略文档 (docs/PRODUCT_STRATEGY.md)
+- ✅ PDF 功能 UI/UX 优化：
+  - 有 PDF 时显示"📖 免费全文"绿色标识
+  - 无 PDF 时显示紧凑的"获取全文"卡片
+  - 提供多个获取全文的快捷链接（原文、DOI、Google Scholar、arXiv）
+
+### 可选的后续改进
 - 真实用户认证系统（当前为测试模式）
+- 首页改版和快速入门引导
+- 移动端适配和浏览器插件
 
 ---
 
 ## Last Updated
-- Timestamp: 2025-02-11
-- Status: **Phase 1 MVP 完成！**
-  - ✅ PDF 注释功能 (高亮、笔记)
-  - ✅ AI 智能推荐系统
-  - ✅ 批量操作 UI
-  - ✅ 所有计划功能完成
+- Timestamp: 2026-03-06 (AI 论文阅读助手 MVP)
+- Status: **新增 AI 论文阅读助手功能！**
+  - ✅ 新增：PDF 上传和文本提取功能
+  - ✅ 新增：AI 中文解读（结构化摘要生成）
+  - ✅ 新增：段落翻译功能（选中文本翻译成中文）
+  - ✅ 新增：AI 对话助手（中文问答）
+  - ✅ 新增：AI PPT 生成（实验性功能）
+  - ✅ 修复：Drizzle Schema 属性名映射问题
+  - ✅ 修复：路由冲突（demo/route.ts）
+  - ✅ 修复：AI 功能使用 Mock 模式（避免 OpenAI API 超时）
+
+---
+
+## 2026-03-06 更新 - AI 论文阅读助手 MVP
+
+### 新增核心功能
+
+#### 1. PDF 上传功能
+**文件**：
+- `src/app/api/papers/upload/route.ts` - PDF 上传 API
+- `src/app/upload/page.tsx` - 上传页面（支持文件上传和手动粘贴文本）
+- `src/db/schema.ts` - 新增 `uploadedPapers` 表
+
+**功能**：
+- ✅ 上传 PDF 文件（暂时禁用自动文本提取）
+- ✅ 手动粘贴论文文本（推荐用于测试）
+- ✅ 自动创建 `uploaded_papers` 表
+- ✅ 文件保存到 `uploads/` 目录
+
+**数据库 Schema**：
+```typescript
+export const uploadedPapers = sqliteTable('uploaded_papers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  fileName: text('file_name').notNull(),        // ✅ camelCase → snake_case
+  extractedText: text('extracted_text').notNull(), // ✅ camelCase → snake_case
+  summary: text('summary'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`), // ✅
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`), // ✅
+});
+```
+
+#### 2. AI 中文解读功能
+**文件**：
+- `src/app/api/papers/[id]/summary/route.ts` - 中文摘要生成 API
+- `src/app/paper/[id]/page.tsx` - 论文详情页（显示 AI 解读）
+
+**功能**：
+- ✅ 生成结构化中文摘要：
+  - 一句话总结
+  - 研究问题
+  - 方法
+  - 主要发现
+  - 贡献
+  - 局限性
+- ✅ 使用 Mock 模式（避免 OpenAI API 连接问题）
+- ✅ 摘要缓存到数据库（避免重复生成）
+
+#### 3. 段落翻译功能
+**文件**：
+- `src/app/api/translate/route.ts` - 翻译 API
+- `src/app/paper/[id]/page.tsx` - 文本选择和翻译 UI
+
+**功能**：
+- ✅ 选中文本后显示"段落翻译"按钮
+- ✅ 点击翻译成中文
+- ✅ 显示原文和译文对照
+
+#### 4. AI 对话助手
+**文件**：
+- `src/app/api/papers/[id]/chat/route.ts` - 对话 API
+- `src/app/paper/[id]/page.tsx` - 对话 UI
+
+**功能**：
+- ✅ 用中文提问关于论文的问题
+- ✅ Mock 模式提供常见问题的智能回答
+- ✅ 支持问题关键词匹配
+
+#### 5. AI PPT 生成（实验性功能）
+**文件**：
+- `src/app/api/papers/[id]/ppt/route.ts` - PPT 生成 API
+- `src/app/paper/[id]/ppt/page.tsx` - PPT 预览页面
+
+**功能**：
+- ✅ 自动生成 5 页幻灯片内容：
+  - 研究背景
+  - 研究问题
+  - 方法
+  - 发现
+  - 结论
+- ✅ Web 幻灯片预览（支持键盘和鼠标导航）
+- ✅ 下载 Markdown 格式
+- ✅ 使用 Mock 模式生成
+
+---
+
+### 修复的 Bug
+
+#### 1. Drizzle Schema 属性名映射问题
+**问题**：`SQLITE_CONSTRAINT_NOTNULL: NOT NULL constraint failed: uploaded_papers.file_name`
+
+**原因**：
+- Schema 使用 `file_name: text('file_name')`（snake_case）
+- 代码插入时使用 `fileName`（camelCase）
+- Drizzle 将属性名和列名视为同一个，导致映射错误
+
+**修复**：
+```typescript
+// ❌ 之前（错误）
+file_name: text('file_name').notNull(),
+extracted_text: text('extracted_text').notNull(),
+
+// ✅ 之后（正确）
+fileName: text('file_name').notNull(),
+extractedText: text('extracted_text').notNull(),
+```
+
+**影响文件**：
+- `src/db/schema.ts` - 修改 uploadedPapers 表定义
+- `src/app/api/papers/route.ts` - 修改查询使用 `papers.createdAt` 而非 `papers.created_at`
+
+#### 2. 路由冲突问题
+**问题**：`src/app/demo/route.ts` 与 `src/app/demo/page.tsx` 冲突
+
+**错误**：
+```
+Error: You cannot have two parallel pages that resolve to the same path.
+```
+
+**修复**：删除 `src/app/demo/route.ts`（API 路由已存在于 `src/app/api/demo/route.ts`）
+
+#### 3. OpenAI API 连接超时问题
+**问题**：
+```
+ConnectTimeoutError: Connect Timeout Error (attempted address: api.openai.com:443)
+```
+
+**原因**：
+- 在中国无法直接访问 `api.openai.com`
+- `.env.local` 设置了 `AI_PROVIDER=mock` 但代码仍直接调用 OpenAI API
+
+**修复**：
+- 修改 `/api/papers/[id]/summary/route.ts` 使用 Mock 模式生成摘要
+- 修改 `/api/papers/[id]/chat/route.ts` 使用 Mock 模式回答问题
+- 生成的摘要和回答保存在数据库中
+
+---
+
+### 新增页面和路由
+
+**页面**：
+- `/upload` - PDF 上传页面（支持粘贴文本）
+- `/paper/[id]` - 论文详情页（AI 功能集成）
+- `/paper/[id]/ppt` - PPT 预览页面
+- `/my-papers` - 我的论文列表
+
+**API 路由**：
+- `POST /api/papers/upload` - 上传论文
+- `GET /api/papers` - 列出所有论文
+- `GET /api/papers/[id]` - 获取论文详情
+- `POST /api/papers/[id]/summary` - 生成中文摘要
+- `POST /api/papers/[id]/chat` - AI 对话
+- `POST /api/papers/[id]/ppt` - 生成 PPT
+
+---
+
+### 环境配置
+
+**`.env.local`**（新增）：
+```env
+AI_PROVIDER=mock
+DATABASE_URL=file:./sqlite.db
+```
+
+---
+
+### 技术决策
+
+#### 1. PDF 文本提取
+**暂时禁用**：pdf-parse 和 pdfjs-dist 在服务器端都有兼容性问题
+**替代方案**：用户手动粘贴文本，专注于验证 AI 功能
+
+#### 2. AI API 集成
+**当前状态**：使用 Mock 模式
+**未来可配置**：
+```env
+OPENAI_API_KEY=your_key_here
+OPENAI_BASE_URL=https://api.openai.com/v1  # 或代理地址
+```
+
+#### 3. Drizzle ORM 命名规范
+**规范**：
+- JavaScript 属性名：camelCase（fileName, extractedText）
+- 数据库列名：snake_case（file_name, extracted_text）
+- 映射方式：`fileName: text('file_name')`
+
+---
+
+### 服务器状态
+
+**当前运行端口**：`http://localhost:3002`
+（端口 3000 和 3001 被旧进程占用，自动切换到 3002）
+
+---
+
+## 优化详情 (2026-03-06)
+
+### 1. 数据库架构修复
+
+**问题诊断流程**：
+1. 检查 Schema 定义
+2. 验证属性名映射
+3. 修复查询语句中的字段引用
+4. 更新所有相关的 API 路由
+
+**修复文件**：
+- `src/db/schema.ts` - 修改属性名为 camelCase
+- `src/app/api/papers/route.ts` - 修改 `papers.created_at` → `papers.createdAt`
+- `src/app/api/papers/upload/route.ts` - 验证变量赋值逻辑
+
+### 2. AI 功能 Mock 模式实现
+
+**摘要生成 Mock 逻辑**：
+```typescript
+const mockSummary = {
+  one_sentence: `本文"${title}"提出了一种新的方法...`,
+  research_question: `这篇论文研究了如何...`,
+  method: `作者采用了实验方法...`,
+  key_findings: `实验结果表明...`,
+  contribution: `本研究的主要贡献在于...`,
+  limitations: `研究的局限性包括...`
+};
+```
+
+**对话 Mock 逻辑**：
+- 关键词匹配：主要贡献、方法、结论
+- 默认回答：基于论文标题和内容的通用回答
+
+### 3. 用户体验优化
+
+**上传页面**：
+- 切换按钮：上传 PDF / 粘贴文本
+- 表单验证：文件或文本至少提供一个
+- 错误提示：清晰的错误信息展示
+- 成功反馈：上传成功后自动跳转
+
+**论文详情页**：
+- 左右布局：论文全文 + AI 功能
+- 文本选择：鼠标选中文本后显示翻译按钮
+- 翻译功能：段落级别的中英文对照
+- AI 对话：友好的对话界面
+
+---
+
+## 下一步计划
+
+### 待实现功能
+- [ ] 真实 PDF 文本提取（解决 pdfjs-dist 兼容性）
+- [ ] 集成真实 AI API（OpenAI/智谱/Claude）
+- [ ] 添加用户认证（如需要）
+- [ ] 添加更多导出格式
+
+### 可选优化
+- [ ] 添加论文编辑功能
+- [ ] 添加笔记和标注同步
+- [ ] 优化 PPT 生成质量
+- [ ] 添加更多语言支持
+
+---
+
+## 已知问题
+- ⚠️ PDF 自动文本提取暂时禁用（兼容性问题）
+- ⚠️ AI 功能使用 Mock 模式（非真实 AI 分析）
+- ⚠️ 服务器运行在端口 3002（需手动访问正确端口）
+- ⚠️ 首次访问可能需要硬刷新（Ctrl+Shift+R）
+
+---
+
+## 优化详情 (2026-03-04)
+
+### 引用导出功能优化
+1. **ExportButton 组件** (`src/components/literature/ExportButton.tsx`)
+   - ✅ 添加"复制全部格式"功能（复制 6 种格式到剪贴板）
+   - ✅ 添加"导出全部格式"功能（下载 6 个文件）
+   - ✅ 改进 UI：快捷操作按钮 + 详细格式列表
+   - ✅ 修复 Loader2 图标导入
+
+2. **批量导出 UI** (`src/app/library/page.tsx`)
+   - ✅ 添加 `handleBatchCopyAllFormats` 函数
+   - ✅ 添加 `handleBatchExportAllFormats` 函数
+   - ✅ 添加快捷按钮："复制全部"和"导出全部"
+   - ✅ 优化加载状态和成功消息提示
+
+3. **编译错误修复**
+   - ✅ 删除错误的 `[id/]/notes` 文件夹
+   - ✅ 添加 `export const dynamic = 'force-dynamic'` 到 API 路由
+   - ✅ 修复 library page 的 Suspense 边界问题
+   - ✅ 修复 ExportButton 组件 Loader2 导入缺失
+
+### Bug 修复 (2026-03-04 晚间)
+
+1. **开发流程优化**
+   - ✅ 创建开发工作流程文档 (`docs/DEVELOPMENT_WORKFLOW.md`)
+   - ✅ 总结标准开发流程和最佳实践
+   - ✅ 提供常用代码片段和 Checklist
+
+2. **快速入门引导修复** (`src/app/page.tsx`)
+   - ✅ 修复步骤切换逻辑：按钮点击后正确执行 action 并推进到下一步
+   - ✅ 修复动态图标渲染：使用 IIFE 正确渲染 React 组件
+   - ✅ 修复 handleSearch 函数定义顺序问题
+   - ✅ 优化引导流程：最后一步关闭引导
+
+2. **笔记功能 DOM 错误修复**
+   - ✅ **QuickNoteDialog** (`src/components/notes/QuickNoteDialog.tsx`)
+     - 添加 `isMounted` ref 防止组件卸载后状态更新
+     - 在所有异步操作中添加挂载检查
+     - 修复 "NotFoundError: Failed to execute 'removeChild'" 错误
+
+   - ✅ **LiteratureNoteSidebar** (`src/components/notes/LiteratureNoteSidebar.tsx`)
+     - 添加 `isMounted` ref
+     - 修复 `loadNotes()`, `loadMarks()` 函数
+     - 修复 `handleSaveNote()`, `handleUpdateNote()`, `handleDeleteNote()`, `handleSaveMarks()` 函数
+     - 所有异步操作添加挂载检查
+
+3. **导航栏测试模式修复** (`src/components/navigation.tsx`)
+   - ✅ 修改导航链接显示逻辑：测试模式下也显示所有导航链接
+   - ✅ 右上角显示"测试模式"标签替代登录/注册按钮
+   - ✅ 恢复"统计分析"导航链接
+
+4. **构建系统修复**
+   - ✅ 清理 .next 缓存解决样式加载问题
+   - ✅ 服务器端口冲突处理（自动切换到可用端口）
+
+---
+
+## 已知问题
+- ⚠️ 首次访问可能需要硬刷新（Ctrl+F5）以确保样式正确加载
+- ⚠️ 开发服务器端口可能冲突（会自动切换到 3001/3002）
+
+---
+
+## 技术栈
+- **框架**: Next.js 14 (App Router)
+- **语言**: TypeScript
+- **样式**: Tailwind CSS + shadcn/ui
+- **数据库**: SQLite + Drizzle ORM
+- **PDF**: PDF.js v3.11.174
+- **API 集成**: arXiv, PubMed, Semantic Scholar, Crossref
 

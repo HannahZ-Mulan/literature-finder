@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Check, ExternalLink, FileText, Folder, BookOpen, Wand, ChevronDown, Save, Download } from 'lucide-react';
+import { Loader2, ArrowLeft, Check, ExternalLink, FileText, Folder, BookOpen, Wand, ChevronDown, Save, Download, Search, MessageSquare, Sparkles } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,6 +61,16 @@ export default function LiteratureDetailPage() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [existingSummary, setExistingSummary] = useState<{ content: string; length_level: string } | null>(null);
 
+  // AI Insights states
+  const [insights, setInsights] = useState<any>(null);
+  const [isExtractingInsights, setIsExtractingInsights] = useState(false);
+
+  // AI Chat states
+  const [chatQuestion, setChatQuestion] = useState('');
+  const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [isChatting, setIsChatting] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+
 
   // Quick actions states
   const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
@@ -103,7 +113,26 @@ export default function LiteratureDetailPage() {
         throw new Error(data.error || 'Failed to fetch literature');
       }
 
-      setLiterature(data.literature);
+      // 转换数据库字段名（蛇形命名转驼峰命名）
+      const lit = data.literature;
+      const transformedLiterature: Literature = {
+        id: lit.id,
+        title: lit.title,
+        authors: lit.authors || [],
+        abstract: lit.abstract || '',
+        publishedDate: lit.publication_date || '',
+        journal: lit.journal,
+        conference: lit.conference,
+        doi: lit.doi,
+        citationCount: lit.citation_count,
+        keywords: lit.keywords ? JSON.parse(lit.keywords) : [],
+        source: lit.source,
+        sourceUrl: lit.source_url || lit.url,
+        pdfUrl: lit.pdf_url,
+        categories: lit.categories ? JSON.parse(lit.categories) : [],
+      };
+
+      setLiterature(transformedLiterature);
       // Also fetch tags when literature is loaded
       fetchTags();
     } catch (err: any) {
@@ -262,6 +291,71 @@ export default function LiteratureDetailPage() {
       setTimeout(() => setError(''), 5000);
     } finally {
       setIsGeneratingSummary(false);
+    }
+  };
+
+  const handleExtractInsights = async () => {
+    if (!literature?.abstract) {
+      setError('无法提取洞察：该文献没有摘要');
+      return;
+    }
+
+    setIsExtractingInsights(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/literature/${id}/insights`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '提取洞察失败');
+      }
+
+      setInsights(data.insights);
+      setSuccessMessage('洞察提取成功！');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError(err.message);
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setIsExtractingInsights(false);
+    }
+  };
+
+  const handleChat = async () => {
+    if (!chatQuestion.trim()) return;
+
+    setIsChatting(true);
+    setError('');
+
+    // Add user question to history
+    const newHistory = [...chatHistory, { role: 'user' as const, content: chatQuestion }];
+    setChatHistory(newHistory);
+
+    try {
+      const response = await fetch(`/api/literature/${id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: chatQuestion,
+          chat_history: chatHistory.map(h => ({ role: h.role, content: h.content })),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '聊天失败');
+      }
+
+      // Add assistant response to history
+      setChatHistory([...newHistory, { role: 'assistant' as const, content: data.answer }]);
+      setChatQuestion('');
+    } catch (err: any) {
+      setError(err.message);
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setIsChatting(false);
     }
   };
 
@@ -673,14 +767,165 @@ export default function LiteratureDetailPage() {
           </CardContent>
         </Card>
 
-        {/* PDF Preview */}
+        {/* AI Insights Extraction */}
+        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-purple-200 dark:border-purple-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              AI 洞察提取
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                提取论文的关键洞察，包括研究问题、方法、发现、局限性和未来工作
+              </p>
+              <Button
+                onClick={handleExtractInsights}
+                disabled={isExtractingInsights}
+                size="sm"
+              >
+                {isExtractingInsights ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    提取中...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    提取洞察
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {isExtractingInsights && (
+              <div className="flex items-center justify-center py-8 bg-white/50 dark:bg-black/20 rounded-lg">
+                <Loader2 className="w-6 h-6 animate-spin mr-3 text-purple-600" />
+                <span className="text-sm text-muted-foreground">AI 正在分析论文...</span>
+              </div>
+            )}
+
+            {insights && !isExtractingInsights && (
+              <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-purple-200 dark:border-purple-800 space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 text-purple-700 dark:text-purple-300">🔍 研究问题</h4>
+                    <p className="text-sm text-muted-foreground">{insights.research_question}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 text-purple-700 dark:text-purple-300">⚙️ 方法论</h4>
+                    <p className="text-sm text-muted-foreground">{insights.methodology}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 text-purple-700 dark:text-purple-300">🎯 关键发现</h4>
+                    <p className="text-sm text-muted-foreground">{insights.key_findings}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 text-purple-700 dark:text-purple-300">⚠️ 局限性</h4>
+                    <p className="text-sm text-muted-foreground">{insights.limitations}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm mb-2 text-purple-700 dark:text-purple-300">🚀 未来工作</h4>
+                    <p className="text-sm text-muted-foreground">{insights.future_work}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* AI Chat with Paper */}
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
+              AI 对话助手
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!showChat ? (
+              <div className="text-center py-6">
+                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50 text-green-600" />
+                <p className="text-sm text-muted-foreground mb-3">
+                  向 AI 提问关于这篇论文的任何问题
+                </p>
+                <Button onClick={() => setShowChat(true)} variant="outline">
+                  开始对话
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Chat History */}
+                <div className="bg-white dark:bg-gray-900 rounded-lg border border-green-200 dark:border-green-800 p-4 max-h-96 overflow-y-auto space-y-3">
+                  {chatHistory.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      开始提问吧！例如："这篇论文的主要贡献是什么？"
+                    </p>
+                  ) : (
+                    chatHistory.map((msg, idx) => (
+                      <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] rounded-lg p-3 ${
+                          msg.role === 'user'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                        }`}>
+                          <p className="text-sm">{msg.content}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  {isChatting && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                        <Loader2 className="w-4 h-4 animate-spin text-green-600" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Chat Input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={chatQuestion}
+                    onChange={(e) => setChatQuestion(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !isChatting && handleChat()}
+                    placeholder="输入您的问题..."
+                    disabled={isChatting}
+                    className="flex-1 px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  <Button
+                    onClick={handleChat}
+                    disabled={isChatting || !chatQuestion.trim()}
+                    size="sm"
+                  >
+                    {isChatting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <MessageSquare className="w-4 h-4 mr-1" />
+                        发送
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* PDF Preview - 只在有 PDF 时显示完整的预览卡片 */}
         {literature.pdf_url ? (
-          <Card>
+          <Card className="border-green-200 dark:border-green-900">
             <CardHeader>
               <CardTitle className="flex items-center justify-between flex-wrap gap-y-2">
                 <div className="flex items-center gap-2 text-lg">
-                  <FileText className="w-5 h-5" />
-                  PDF 预览
+                  <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <span>PDF 预览</span>
+                  <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full">
+                    📖 免费全文
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <DropdownMenu>
@@ -732,7 +977,7 @@ export default function LiteratureDetailPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      if (typeof window !== 'undefined') {
+                      if (typeof window !== 'undefined' && literature.pdf_url) {
                         window.open(literature.pdf_url, '_blank');
                       }
                     }}
@@ -771,46 +1016,66 @@ export default function LiteratureDetailPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="w-5 h-5" />
-                PDF 预览
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 space-y-4">
-                <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                  <FileText className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium mb-2">暂无 PDF 预览</p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    该文献未提供直接的 PDF 链接。您可以尝试以下方式获取：
-                  </p>
-                  <div className="space-y-2 text-sm text-left max-w-md mx-auto">
-                    <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
-                      <span className="font-medium">1.</span>
-                      <span>访问期刊官网或数据库查找</span>
-                    </div>
-                    {literature.doi && (
-                      <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
-                        <span className="font-medium">2.</span>
-                        <span>通过 DOI 查找：<a
-                          href={`https://doi.org/${literature.doi}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline ml-1"
-                        >
-                          {literature.doi}
-                        </a></span>
-                      </div>
-                    )}
-                    <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
-                      <span className="font-medium">3.</span>
-                      <span>使用学校或机构图书馆资源</span>
-                    </div>
+          <Card className="border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <h3 className="font-medium">获取全文</h3>
                   </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    该文献未提供免费 PDF。试试以下方式：
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {literature.sourceUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(literature.sourceUrl, '_blank')}
+                        className="text-xs"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        原文链接
+                      </Button>
+                    )}
+                    {literature.doi && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`https://doi.org/${literature.doi}`, '_blank')}
+                        className="text-xs"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        DOI 解析
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`https://scholar.google.com/scholar?q=${encodeURIComponent(literature.title)}`, '_blank')}
+                      className="text-xs"
+                    >
+                      <Search className="w-3 h-3 mr-1" />
+                      Google Scholar
+                    </Button>
+                    {literature.source === 'semantic-scholar' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`https://arxiv.org/search/${encodeURIComponent(literature.title.split(' ').slice(0, 5).join(' '))}`, '_blank')}
+                        className="text-xs"
+                      >
+                        <Search className="w-3 h-3 mr-1" />
+                        在 arXiv 搜索
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">
+                    💡 提示：选择"arXiv"来源可获得更多免费 PDF
+                  </p>
                 </div>
               </div>
             </CardContent>

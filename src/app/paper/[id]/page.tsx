@@ -1,0 +1,627 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, ArrowLeft, Sparkles, MessageSquare, FileText, Languages, FileOutput } from 'lucide-react';
+import { formatPDFText } from '@/lib/text-formatter';
+import { cleanMarkdown } from '@/lib/markdown-cleaner';
+
+interface Paper {
+  id: number;
+  title: string;
+  fileName: string;
+  extractedText: string;
+  summary?: string;
+  createdAt: string;
+}
+
+interface ChineseSummary {
+  one_sentence: string;
+  research_question: string;
+  method: string;
+  key_findings: string;
+  contribution: string;
+  limitations: string;
+}
+
+interface CoreInsights {
+  oneSentence: string;
+  keyFindings: string[];
+  practicalValue: {
+    students: string;
+    professionals: string;
+    general: string;
+  };
+}
+
+export default function PaperReaderPage() {
+  const { id } = useParams();
+  const router = useRouter();
+  const [paper, setPaper] = useState<Paper | null>(null);
+  const [chineseSummary, setChineseSummary] = useState<ChineseSummary | null>(null);
+  const [humanChineseSummary, setHumanChineseSummary] = useState<string | null>(null);
+  const [coreInsights, setCoreInsights] = useState<CoreInsights | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isGeneratingHumanSummary, setIsGeneratingHumanSummary] = useState(false);
+  const [isGeneratingCoreInsights, setIsGeneratingCoreInsights] = useState(false);
+
+  // Chat states
+  const [chatQuestion, setChatQuestion] = useState('');
+  const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [isChatting, setIsChatting] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+
+  // Translation states
+  const [selectedText, setSelectedText] = useState('');
+  const [translation, setTranslation] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  // PPT generation states
+  const [isGeneratingPPT, setIsGeneratingPPT] = useState(false);
+
+  useEffect(() => {
+    fetchPaper();
+  }, [id]);
+
+  const fetchPaper = async () => {
+    try {
+      const response = await fetch(`/api/papers/${id}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load paper');
+      }
+
+      setPaper(data.paper);
+
+      // Load existing summary if available
+      if (data.paper.summary) {
+        try {
+          setChineseSummary(JSON.parse(data.paper.summary));
+        } catch (e) {
+          console.error('Failed to parse summary:', e);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading paper:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    setIsGeneratingSummary(true);
+    try {
+      const response = await fetch(`/api/papers/${id}/summary`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate summary');
+      }
+
+      setChineseSummary(data.summary);
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      alert(error instanceof Error ? error.message : 'Failed to generate summary');
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  const handleGenerateHumanSummary = async () => {
+    setIsGeneratingHumanSummary(true);
+    try {
+      const response = await fetch(`/api/papers/${id}/chinese-summary`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate Chinese summary');
+      }
+
+      setHumanChineseSummary(data.summary);
+    } catch (error) {
+      console.error('Error generating Chinese summary:', error);
+      alert(error instanceof Error ? error.message : 'Failed to generate Chinese summary');
+    } finally {
+      setIsGeneratingHumanSummary(false);
+    }
+  };
+
+  const handleGenerateCoreInsights = async () => {
+    setIsGeneratingCoreInsights(true);
+    try {
+      const response = await fetch(`/api/papers/${id}/core-insights`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate core insights');
+      }
+
+      setCoreInsights(data.insights);
+    } catch (error) {
+      console.error('Error generating core insights:', error);
+      alert(error instanceof Error ? error.message : 'Failed to generate core insights');
+    } finally {
+      setIsGeneratingCoreInsights(false);
+    }
+  };
+
+  const handleChat = async () => {
+    if (!chatQuestion.trim()) return;
+
+    setIsChatting(true);
+    const newHistory = [...chatHistory, { role: 'user' as const, content: chatQuestion }];
+    setChatHistory(newHistory);
+
+    try {
+      const response = await fetch(`/api/papers/${id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: chatQuestion,
+          chat_history: chatHistory.map(h => ({ role: h.role, content: h.content })),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to chat');
+      }
+
+      setChatHistory([...newHistory, { role: 'assistant' as const, content: data.answer }]);
+      setChatQuestion('');
+    } catch (error) {
+      console.error('Error chatting:', error);
+      alert(error instanceof Error ? error.message : 'Failed to chat');
+    } finally {
+      setIsChatting(false);
+    }
+  };
+
+  const handleTranslate = async () => {
+    if (!selectedText.trim()) return;
+
+    setIsTranslating(true);
+    setTranslation('');
+
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: selectedText,
+          target_language: 'zh',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Translation failed');
+      }
+
+      setTranslation(data.translation);
+    } catch (error) {
+      console.error('Translation error:', error);
+      alert(error instanceof Error ? error.message : 'Translation failed');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const handleGeneratePPT = async () => {
+    // Navigate to PPT preview page
+    router.push(`/paper/${id}/ppt`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!paper) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground mb-4">Paper not found</p>
+            <Button onClick={() => router.push('/upload')}>Back to Upload</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* Header */}
+      <div className="mb-6">
+        <Button variant="ghost" onClick={() => router.push('/upload')} className="mb-4">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          返回上传
+        </Button>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-2xl font-bold">{paper.title}</h1>
+          <Button
+            onClick={handleGeneratePPT}
+            disabled={isGeneratingPPT}
+            variant="outline"
+            className="border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950"
+          >
+            {isGeneratingPPT ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                生成中...
+              </>
+            ) : (
+              <>
+                <FileOutput className="w-4 h-4 mr-2" />
+                生成 PPT
+              </>
+            )}
+          </Button>
+        </div>
+        <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
+          ⚡ 实验性功能：AI 自动生成 5 页 PPT
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: PDF Text */}
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              论文全文
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div
+              className="prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed max-h-[70vh] overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-text select-text"
+              onMouseUp={() => {
+                const selection = window.getSelection();
+                const text = selection?.toString().trim();
+                if (text && text.length > 10) {
+                  setSelectedText(text);
+                }
+              }}
+            >
+              {formatPDFText(paper.extractedText.slice(0, 15000))}
+              {paper.extractedText.length > 15000 && '\n\n... (文本过长，已截断)'}
+            </div>
+
+            {selectedText && (
+              <Card className="mt-4 border-blue-200 dark:border-blue-800">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Languages className="w-4 h-4 text-blue-600" />
+                    段落翻译
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm">
+                    {selectedText.slice(0, 300)}
+                    {selectedText.length > 300 && '...'}
+                  </div>
+
+                  <Button
+                    onClick={handleTranslate}
+                    disabled={isTranslating}
+                    size="sm"
+                    className="w-full"
+                  >
+                    {isTranslating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        翻译中...
+                      </>
+                    ) : (
+                      <>
+                        <Languages className="w-4 h-4 mr-2" />
+                        翻译成中文
+                      </>
+                    )}
+                  </Button>
+
+                  {translation && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-sm font-medium mb-2">中文翻译：</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{translation}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Right: Core Insights (NEW) */}
+        <div className="space-y-6">
+          {/* Generate Button if no insights yet */}
+          {!coreInsights && (
+            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 border-amber-200 dark:border-amber-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  生成AI核心解读
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  获取论文的核心洞察，包括一句话总结、关键发现和实际应用价值
+                </p>
+                <Button
+                  onClick={handleGenerateCoreInsights}
+                  disabled={isGeneratingCoreInsights}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isGeneratingCoreInsights ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      生成中...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      开始解读
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Core Insights Display */}
+          {coreInsights && (
+            <>
+              {/* One Sentence Summary - TOP PRIORITY */}
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <span className="text-3xl">🧠</span>
+                    <div className="flex-1">
+                      <h3 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2">
+                        一句话总结
+                      </h3>
+                      <p className="text-base font-medium leading-relaxed text-gray-900 dark:text-gray-100">
+                        {coreInsights.oneSentence}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Key Findings */}
+              <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <span className="text-2xl">🎯</span>
+                    <div className="flex-1">
+                      <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">
+                        核心发现
+                      </h3>
+                      <div className="space-y-3">
+                        {coreInsights.keyFindings.map((finding, idx) => (
+                          <div key={idx} className="flex gap-3">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">
+                              {idx + 1}
+                            </span>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                              {finding}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Practical Value - THE KEY DIFFERENTIATOR */}
+              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-xl">💡</span>
+                    这篇论文有什么用？
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* For Students */}
+                  <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
+                    <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
+                      <span>🎓</span>
+                      对学生 / 研究者
+                    </h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                      {coreInsights.practicalValue.students}
+                    </p>
+                  </div>
+
+                  {/* For Professionals */}
+                  <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
+                    <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
+                      <span>💼</span>
+                      对职场人 / 产品经理
+                    </h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                      {coreInsights.practicalValue.professionals}
+                    </p>
+                  </div>
+
+                  {/* For General Users */}
+                  <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
+                    <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
+                      <span>🌱</span>
+                      对普通人 / 日常生活
+                    </h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                      {coreInsights.practicalValue.general}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Full Text Summary (Collapsible - below core insights) */}
+          <details className="group">
+            <summary className="cursor-pointer">
+              <Card className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <CardHeader className="py-3">
+                  <CardTitle className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      查看完整AI解读
+                    </div>
+                    <span className="text-xs text-muted-foreground group-open:rotate-180 transition-transform">
+                      ▼
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            </summary>
+            <Card className="mt-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <CardContent className="pt-6">
+                {/* Original structured summary option */}
+                <div className="space-y-4">
+                  <Button
+                    onClick={handleGenerateSummary}
+                    disabled={isGeneratingSummary}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    {isGeneratingSummary ? '生成中...' : '生成结构化摘要'}
+                  </Button>
+                  {chineseSummary && (
+                    <div className="space-y-4 mt-4">
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">📝 一句话总结</h4>
+                        <p className="text-sm text-muted-foreground">{chineseSummary.one_sentence}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">❓ 研究问题</h4>
+                        <p className="text-sm text-muted-foreground">{chineseSummary.research_question}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">⚙️ 方法</h4>
+                        <p className="text-sm text-muted-foreground">{chineseSummary.method}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">🎯 关键发现</h4>
+                        <p className="text-sm text-muted-foreground">{chineseSummary.key_findings}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">💡 贡献</h4>
+                        <p className="text-sm text-muted-foreground">{chineseSummary.contribution}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">⚠️ 局限性</h4>
+                        <p className="text-sm text-muted-foreground">{chineseSummary.limitations}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </details>
+
+          {/* Chat with Paper */}
+          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
+                AI 对话助手
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!showChat ? (
+                <div className="text-center py-6">
+                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50 text-green-600" />
+                  <p className="text-sm text-muted-foreground mb-4">
+                    向 AI 提问关于这篇论文的问题
+                  </p>
+                  <Button onClick={() => setShowChat(true)} variant="outline">
+                    开始对话
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-white dark:bg-gray-900 rounded-lg border border-green-200 dark:border-green-800 p-4 max-h-80 overflow-y-auto space-y-3">
+                    {chatHistory.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        提问吧！例如："这篇论文的主要贡献是什么？"
+                      </p>
+                    ) : (
+                      chatHistory.map((msg, idx) => (
+                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] rounded-lg p-3 ${
+                            msg.role === 'user'
+                              ? 'bg-green-600 text-white'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                          }`}>
+                            <p className="text-sm whitespace-pre-wrap">
+                              {msg.role === 'assistant' ? cleanMarkdown(msg.content) : msg.content}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    {isChatting && (
+                      <div className="flex justify-start">
+                        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                          <Loader2 className="w-4 h-4 animate-spin text-green-600" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={chatQuestion}
+                      onChange={(e) => setChatQuestion(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && !isChatting && handleChat()}
+                      placeholder="输入你的问题..."
+                      disabled={isChatting}
+                      className="flex-1 px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    <Button
+                      onClick={handleChat}
+                      disabled={isChatting || !chatQuestion.trim()}
+                      size="sm"
+                    >
+                      {isChatting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : '发送'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

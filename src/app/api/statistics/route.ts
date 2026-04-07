@@ -3,6 +3,8 @@ import { db } from '@/db';
 import { literature, readingListItems, readingActivity, literatureCategories, categories, literatureTags, tags, searchHistory, userSettings } from '@/db/schema';
 import { eq, desc, count, sql, gte, and, lt } from 'drizzle-orm';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/statistics

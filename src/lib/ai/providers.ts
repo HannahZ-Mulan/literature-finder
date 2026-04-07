@@ -15,14 +15,35 @@ export interface AIProvider {
   }>;
 }
 
-export type AIProviderType = 'zhipu' | 'openai' | 'claude' | 'ollama' | 'mock';
+export type AIProviderType = 'zhipu' | 'deepseek' | 'openai' | 'claude' | 'ollama' | 'mock';
+
+/**
+ * Provider priority order for fallback
+ * Zhipu GLM-4 (primary, domestic, stable)
+ * -> DeepSeek (secondary, affordable)
+ * -> OpenAI (optional, best quality)
+ * -> Ollama (local, free)
+ * -> Mock (development fallback)
+ */
+export const PROVIDER_FALLBACK_ORDER: AIProviderType[] = [
+  'zhipu',
+  'deepseek',
+  'openai',
+  'ollama',
+  'mock',
+];
 
 // 各提供商的定价（人民币/1M tokens）
 export const PRICING = {
   zhipu: {
     input: 0.5,    // ¥0.5/1M tokens
     output: 0.5,   // ¥0.5/1M tokens
-    note: '国内访问快，价格便宜'
+    note: '国内访问快，价格便宜，稳定性好'
+  },
+  deepseek: {
+    input: 1,      // ¥1/1M tokens (approximate)
+    output: 2,     // ¥2/1M tokens (approximate)
+    note: '性价比极高，国内访问快'
   },
   openai: {
     input: 7,      // $1 ≈ ¥7
@@ -81,12 +102,14 @@ export const USAGE_EXAMPLES = {
   '100篇论文-中等摘要': {
     short: {
       zhipu: '≈ ¥0.02',
+      deepseek: '≈ ¥0.03',
       openai: '≈ ¥0.28',
       claude: '≈ ¥0.84',
       ollama: '免费',
     },
     medium: {
       zhipu: '≈ ¥0.05',
+      deepseek: '≈ ¥0.10',
       openai: '≈ ¥0.70',
       claude: '≈ ¥2.10',
       ollama: '免费',
@@ -95,6 +118,7 @@ export const USAGE_EXAMPLES = {
   '1000篇论文-中等摘要': {
     medium: {
       zhipu: '≈ ¥0.50',
+      deepseek: '≈ ¥1.00',
       openai: '≈ ¥7.00',
       claude: '≈ ¥21.00',
       ollama: '免费',

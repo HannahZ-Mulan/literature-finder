@@ -27,7 +27,7 @@ export class GLMClient {
   private baseURL: string;
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.ZHIPU_GLM_API_KEY || '';
+    this.apiKey = apiKey || process.env.ZHIPU_API_KEY || process.env.ZHIPU_GLM_API_KEY || '';
     this.baseURL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
   }
 

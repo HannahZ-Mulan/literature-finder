@@ -231,3 +231,21 @@ export type ReadingActivity = typeof readingActivity.$inferSelect;
 export type NewReadingActivity = typeof readingActivity.$inferInsert;
 export type LiteratureNote = typeof literatureNotes.$inferSelect;
 export type NewLiteratureNote = typeof literatureNotes.$inferInsert;
+
+// Uploaded Papers for AI Assistant
+export const uploadedPapers = sqliteTable('uploaded_papers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  fileName: text('file_name').notNull(),
+  extractedText: text('extracted_text').notNull(),
+  isComplete: integer('is_complete', { mode: 'boolean' }).notNull().default(false),
+  totalPages: integer('total_pages'), // 总页数
+  extractedPages: integer('extracted_pages'), // 已提取页数
+  extractionMethod: text('extraction_method'), // 'pdfjs', 'ocr', 'mixed'
+  summary: text('summary'), // JSON string with structured summary
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+});
+
+export type UploadedPaper = typeof uploadedPapers.$inferSelect;
+export type NewUploadedPaper = typeof uploadedPapers.$inferInsert;
