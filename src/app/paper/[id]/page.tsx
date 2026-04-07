@@ -65,8 +65,12 @@ export default function PaperReaderPage() {
   // PPT generation states
   const [isGeneratingPPT, setIsGeneratingPPT] = useState(false);
 
+  // Full text expansion state
+  const [isFullTextExpanded, setIsFullTextExpanded] = useState(false);
+
   useEffect(() => {
     fetchPaper();
+    fetchChatHistory();
   }, [id]);
 
   const fetchPaper = async () => {
@@ -92,6 +96,53 @@ export default function PaperReaderPage() {
       console.error('Error loading paper:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchChatHistory = async () => {
+    try {
+      const response = await fetch(`/api/papers/${id}/chats`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        // 如果是404或没有历史，忽略错误
+        return;
+      }
+
+      setChatHistory(data.chats || []);
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+      // 静默失败，不影响用户体验
+    }
+  };
+
+  const saveChatMessage = async (role: 'user' | 'assistant', content: string) => {
+    try {
+      await fetch(`/api/papers/${id}/chats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, content }),
+      });
+    } catch (error) {
+      console.error('Error saving chat message:', error);
+      // 静默失败，不影响用户体验
+    }
+  };
+
+  const clearChatHistory = async () => {
+    try {
+      const response = await fetch(`/api/papers/${id}/chats`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to clear chat history');
+      }
+
+      setChatHistory([]);
+    } catch (error) {
+      console.error('Error clearing chat history:', error);
+      alert(error instanceof Error ? error.message : 'Failed to clear chat history');
     }
   };
 
@@ -200,8 +251,12 @@ export default function PaperReaderPage() {
     if (!chatQuestion.trim()) return;
 
     setIsChatting(true);
-    const newHistory = [...chatHistory, { role: 'user' as const, content: chatQuestion }];
+    const userMessage = { role: 'user' as const, content: chatQuestion };
+    const newHistory = [...chatHistory, userMessage];
     setChatHistory(newHistory);
+
+    // 保存用户消息到数据库
+    await saveChatMessage('user', chatQuestion);
 
     try {
       const response = await fetch(`/api/papers/${id}/chat`, {
@@ -219,8 +274,12 @@ export default function PaperReaderPage() {
         throw new Error(data.error || 'Failed to chat');
       }
 
-      setChatHistory([...newHistory, { role: 'assistant' as const, content: data.answer }]);
+      const assistantMessage = { role: 'assistant' as const, content: data.answer };
+      setChatHistory([...newHistory, assistantMessage]);
       setChatQuestion('');
+
+      // 保存AI回复到数据库
+      await saveChatMessage('assistant', data.answer);
     } catch (error) {
       console.error('Error chatting:', error);
       alert(error instanceof Error ? error.message : 'Failed to chat');
@@ -326,14 +385,40 @@ export default function PaperReaderPage() {
         {/* Left: PDF Text */}
         <Card className="h-fit">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              论文全文
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                论文全文
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsFullTextExpanded(!isFullTextExpanded)}
+                className="text-xs"
+              >
+                {isFullTextExpanded ? (
+                  <>
+                    <span>收起</span>
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    <span>展开全文</span>
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </>
+                )}
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div
-              className="prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed max-h-[70vh] overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-text select-text"
+              className={`prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-text select-text transition-all duration-300 ${
+                isFullTextExpanded ? 'max-h-[70vh] overflow-y-auto' : 'max-h-32 overflow-hidden relative'
+              }`}
               onMouseUp={() => {
                 const selection = window.getSelection();
                 const text = selection?.toString().trim();
@@ -344,6 +429,12 @@ export default function PaperReaderPage() {
             >
               {formatPDFText(paper.extractedText.slice(0, 15000))}
               {paper.extractedText.length > 15000 && '\n\n... (文本过长，已截断)'}
+
+              {!isFullTextExpanded && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 dark:from-gray-900 to-transparent pt-8 pb-2 px-4">
+                  <p className="text-xs text-muted-foreground text-center">点击"展开全文"查看完整内容</p>
+                </div>
+              )}
             </div>
 
             {selectedText && (
@@ -586,9 +677,21 @@ export default function PaperReaderPage() {
           {/* Chat with Paper */}
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
-                AI 对话助手
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  AI 对话助手
+                </div>
+                {showChat && chatHistory.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearChatHistory}
+                    className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
+                  >
+                    清空对话
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
