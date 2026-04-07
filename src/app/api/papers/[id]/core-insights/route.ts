@@ -7,6 +7,7 @@ import { getAIManager } from '@/lib/ai';
 interface CoreInsights {
   oneSentence: string;
   keyFindings: string[];
+  qualityAssessment: string; // 新增：质量判断
   practicalValue: {
     students: string;
     professionals: string;
@@ -71,39 +72,60 @@ export async function POST(
 async function generateCoreInsights(title: string, content: string): Promise<CoreInsights> {
   const aiManager = getAIManager();
 
-  // Prompt for generating core insights
-  const prompt = `请基于以下论文内容，生成核心解读模块。
+  // 核心洞察prompt - 聚焦"认知压缩 + 价值提炼"
+  const prompt = `你是一个研究评估专家。你的任务不是"总结论文"，而是帮用户在30秒内做出判断：
 
-论文标题：${title}
+【论文信息】
+标题：${title}
+内容：${content.substring(0, 8000)}
 
-论文内容：
-${content}
+【目标用户的3个问题】
 
-请按以下结构输出（纯文本，不要markdown符号）：
+问题1：这篇论文到底在讲什么？
+→ 一句话总结（≤50字，直击核心，不要背景铺垫）
+
+问题2：这篇论文值不值得我花时间？
+→ 核心发现 + 质量判断（2-3点，每点≤30字）
+   重点：研究的可信度、结论的力度、样本是否充足
+
+问题3：这篇论文对我有什么用？
+→ 可行动的信息（不是"学术意义"，而是"我能做什么"）
+
+【输出格式】（纯文本，不要markdown）
 
 === 一句话总结 ===
-用1-2句话概括这篇论文最核心的结论。
+[直接讲核心结论，不要"本文研究了..."这种开头，≤50字]
 
 === 核心发现 ===
-只列出最重要的2到3个发现，每个发现用1-2句话说明。
+1. [发现1]（≤30字，强调可信度：样本量、效应量、实验设计）
+2. [发现2]（≤30字，强调结论力度：是否显著、是否可推广）
+3. [发现3]（≤30字，如果只有2个重要发现就省略）
 
-=== 对学生的价值 ===
-这篇论文对学生或研究者有什么用？
-- 写论文时如何引用
-- 做研究时可以借鉴什么
-- 这篇论文在领域中的位置
+=== 质量判断 ===
+[用一句话说明这项研究的可靠程度，例如："样本量大(>1000)，双盲实验，结论可靠" 或 "小样本探索性研究，结论需谨慎"]
 
-=== 对职场人的价值 ===
-这篇论文对职场人或产品经理有什么用？
-- 工作中如何应用这个发现
-- 能帮助做出什么决策
-- 可以设计什么产品或功能
+=== 对学生/研究者的价值 ===
+[具体可以做什么，例如：
+- "写论文时可作为X领域的支持证据"
+- "可借鉴其实验设计方法"
+- "提供了X问题的系统性回顾"
+
+=== 对职场人/产品经理的价值 ===
+[具体可以做什么，例如：
+- "支持了Y决策（有数据支撑）"
+- "可用于优化Z功能（提升KPI）"
+- "提示了X方向的商业机会"
 
 === 对普通人的价值 ===
-这篇论文对普通人或日常生活有什么用？
-- 生活中可以怎么用
-- 能改善什么问题
-- 简单可操作的建议
+[具体可以做什么，例如：
+- "每天坚持Y可以改善Z（有实证支持）"
+- "避免X误区（研究证明无效）"
+- "选择Y时优先考虑Z因素"]
+
+【关键原则】
+1. 极简：每句话都有信息量，不废话
+2. 可判断：帮助用户决定是否深入阅读
+3. 可行动：告诉用户"可以做什么"，不是"学术上有什么意义"
 
 请开始生成：`;
 
@@ -115,6 +137,7 @@ ${content}
   const insights: CoreInsights = {
     oneSentence: '',
     keyFindings: [],
+    qualityAssessment: '', // 新增
     practicalValue: {
       students: '',
       professionals: '',
@@ -128,12 +151,14 @@ ${content}
       insights.oneSentence = trimmed.replace('一句话总结', '').trim();
     } else if (trimmed.startsWith('核心发现')) {
       const findingsText = trimmed.replace('核心发现', '').trim();
-      // Split by newlines and take first 2-3 non-empty lines
-      const lines = findingsText.split('\n')
+      // Split by numbered list or newlines
+      const lines = findingsText.split(/\n|\d+\.\s*/)
         .map(l => l.trim())
-        .filter(l => l.length > 0)
+        .filter(l => l.length > 0 && l.length < 100) // 过滤过长的行
         .slice(0, 3);
       insights.keyFindings = lines;
+    } else if (trimmed.startsWith('质量判断')) {
+      insights.qualityAssessment = trimmed.replace('质量判断', '').trim();
     } else if (trimmed.startsWith('对学生的价值')) {
       insights.practicalValue.students = trimmed.replace('对学生的价值', '').trim();
     } else if (trimmed.startsWith('对职场人的价值')) {

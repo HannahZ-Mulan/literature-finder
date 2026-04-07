@@ -30,6 +30,7 @@ interface ChineseSummary {
 interface CoreInsights {
   oneSentence: string;
   keyFindings: string[];
+  qualityAssessment: string; // 新增：质量判断
   practicalValue: {
     students: string;
     professionals: string;
@@ -564,6 +565,25 @@ export default function PaperReaderPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Quality Assessment - NEW */}
+              {coreInsights.qualityAssessment && (
+                <Card className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 dark:border-purple-800">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">⚖️</span>
+                      <div className="flex-1">
+                        <h3 className="text-xs font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wide mb-2">
+                          研究质量判断
+                        </h3>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {coreInsights.qualityAssessment}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Practical Value - THE KEY DIFFERENTIATOR */}
               <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
