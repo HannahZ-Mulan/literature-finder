@@ -47,22 +47,23 @@ export async function POST(
 
     console.log(`[Chinese Summary] Generating for paper ${paperId}...`);
 
-    // Use AI Manager with the custom prompt
-    const aiManager = getAIManager();
+    // 直接调用 DeepSeek API
+    const { getDeepSeekClient } = await import('@/lib/ai/deepseek');
+    const deepSeekClient = getDeepSeekClient();
 
-    // Call the summary API with our custom prompt as the "abstract"
-    const result = await aiManager.generateSummary(
+    const result = await deepSeekClient.generateSummary(
       paper.title,
       prompt, // Use our custom prompt as the content
       'detailed' // Use detailed to get more content
     );
 
-    console.log(`[Chinese Summary] Generated using provider: ${result.provider}`);
+    console.log(`[Chinese Summary] Generated successfully`);
+    console.log(`[Chinese Summary] Response length:`, result.content?.length || 0);
 
     // Return the raw AI response (already formatted by the prompt)
     return NextResponse.json({
       summary: result.content,
-      provider: result.provider,
+      provider: 'deepseek',
       usage: result.usage,
       cached: false,
     });
