@@ -54,6 +54,8 @@ export default function PaperReaderPage() {
   const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [isChatting, setIsChatting] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [recommendedQuestions, setRecommendedQuestions] = useState<string[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
   // Translation states
   const [selectedText, setSelectedText] = useState('');
@@ -157,6 +159,41 @@ export default function PaperReaderPage() {
     } finally {
       setIsGeneratingCoreInsights(false);
     }
+  };
+
+  const fetchRecommendedQuestions = async () => {
+    setIsLoadingQuestions(true);
+    try {
+      const response = await fetch(`/api/papers/${id}/recommended-questions`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch questions');
+      }
+
+      setRecommendedQuestions(data.questions || []);
+    } catch (error) {
+      console.error('Error fetching recommended questions:', error);
+      // 失败时使用默认问题
+      setRecommendedQuestions([
+        '这篇论文主要研究什么问题？',
+        '研究方法有哪些创新之处？',
+        '主要结论是什么？',
+      ]);
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  };
+
+  const handleQuestionClick = (question: string) => {
+    setChatQuestion(question);
+    // 自动发送问题
+    setTimeout(() => {
+      handleChat();
+    }, 100);
   };
 
   const handleChat = async () => {
@@ -561,7 +598,7 @@ export default function PaperReaderPage() {
                   <p className="text-sm text-muted-foreground mb-4">
                     向 AI 提问关于这篇论文的问题
                   </p>
-                  <Button onClick={() => setShowChat(true)} variant="outline">
+                  <Button onClick={() => { setShowChat(true); fetchRecommendedQuestions(); }} variant="outline">
                     开始对话
                   </Button>
                 </div>
@@ -569,9 +606,35 @@ export default function PaperReaderPage() {
                 <div className="space-y-4">
                   <div className="bg-white dark:bg-gray-900 rounded-lg border border-green-200 dark:border-green-800 p-4 max-h-80 overflow-y-auto space-y-3">
                     {chatHistory.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        提问吧！例如："这篇论文的主要贡献是什么？"
-                      </p>
+                      <div className="space-y-3">
+                        {isLoadingQuestions ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-5 h-5 animate-spin text-green-600 mr-2" />
+                            <span className="text-sm text-muted-foreground">加载推荐问题...</span>
+                          </div>
+                        ) : recommendedQuestions.length > 0 ? (
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                              <Sparkles className="w-4 h-4" />
+                              推荐问题（点击即可提问）
+                            </p>
+                            {recommendedQuestions.map((question, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => handleQuestionClick(question)}
+                                className="w-full text-left p-3 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-950 transition-colors text-sm"
+                              >
+                                <span className="font-medium text-green-700 dark:text-green-400 mr-2">{idx + 1}.</span>
+                                {question}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            提问吧！例如："这篇论文的主要贡献是什么？"
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       chatHistory.map((msg, idx) => (
                         <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
