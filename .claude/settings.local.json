@@ -38,7 +38,16 @@
       "Bash(git add:*)",
       "Bash(git reset:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nAI功能系统重构与优化\n\n## 核心改进\n\n### AI Provider系统\n- 新增DeepSeek AI支持（高性价比，国内访问快）\n- 实现级联回退机制：Zhipu → DeepSeek → OpenAI → Ollama → Mock\n- 添加双步摘要生成：先提取结构化分析，再生成摘要\n- 新增专业提示词系统（prompts.ts）提升学术分析质量\n\n### 新增功能\n- DeepSeek AI客户端（src/lib/ai/deepseek.ts）\n- 学术论文分步分析提示词\n- 智能提供商检测和自动切换\n- 改进的错误处理和日志记录\n\n### 环境配置\n- 更新.env.example支持多AI提供商配置\n- 支持环境变量：AI_PROVIDER, ZHIPU_API_KEY, DEEPSEEK_API_KEY等\n\n### PDF论文上传功能\n- 新增论文上传API（/api/papers/upload）\n- PDF文本提取和AI中文解读\n- 论文对话助手和PPT生成功能\n- 新增上传页面（/upload）和我的论文页面（/my-papers）\n\n### 数据库Schema\n- 新增uploadedPapers表支持论文上传功能\n- 添加isComplete, totalPages, extractionMethod等字段\n\n### UI改进\n- 更新导航栏，添加\"上传论文\"链接\n- 改进文献库页面批量操作\n- 优化引用导出功能\n\n### 文档\n- 新增AI提供商重构文档（docs/AI_PROVIDER_REFACTOR.md）\n- 新增开发工作流程指南（docs/DEVELOPMENT_WORKFLOW.md）\n- 新增产品策略文档（docs/PRODUCT_STRATEGY.md）\n- 更新改动记录（docs/CHANGES_SUMMARY.md）\n\n### 依赖更新\n- 新增：pdf-parse@1.1.1, pdf2json@4.0.2\n- 新增：pptxgenjs@4.0.1 \\(PPT生成\\)\n- 新增：tesseract.js@7.0.0 \\(OCR功能\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(pkill:*)",
+      "Bash(npx next lint:*)",
+      "Bash(cat:*)",
+      "Bash(file:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(hexdump:*)",
+      "Bash(od:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

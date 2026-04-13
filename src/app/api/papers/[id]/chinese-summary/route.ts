@@ -36,8 +36,22 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // Use first 10000 chars for better context
-    const content = paper.extractedText.slice(0, 10000);
+    // 智能提取策略：开头+结尾，确保覆盖摘要、引言、方法、讨论、结论
+    const getContentForAnalysis = (fullText: string) => {
+      const maxLength = 25000; // 增加到25000字符
+
+      if (fullText.length <= maxLength) {
+        return fullText; // 如果全文不长，使用全部
+      }
+
+      // 否则：提取开头18000字符 + 结尾7000字符
+      const beginning = fullText.substring(0, 18000);
+      const ending = fullText.substring(fullText.length - 7000);
+
+      return beginning + '\n\n...[中间内容省略]...\n\n' + ending;
+    };
+
+    const content = getContentForAnalysis(paper.extractedText);
 
     // Get the human-friendly Chinese summary prompt
     const prompt = getHumanChineseSummaryPrompt({

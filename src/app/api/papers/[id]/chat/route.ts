@@ -72,8 +72,20 @@ export async function POST(
       });
     }
 
-    // Use first 8000 chars as context for chat
-    const paperContext = paper.extractedText.slice(0, 8000);
+    // Smart context extraction: beginning + ending for better coverage
+    const getSmartContext = (fullText: string, maxLength: number = 12000) => {
+      if (fullText.length <= maxLength) {
+        return fullText;
+      }
+
+      // Extract beginning (70%) + ending (30%)
+      const beginning = fullText.substring(0, Math.floor(maxLength * 0.7));
+      const ending = fullText.substring(fullText.length - Math.floor(maxLength * 0.3));
+
+      return beginning + '\n\n...[论文中间部分省略]...\n\n' + ending;
+    };
+
+    const paperContext = getSmartContext(paper.extractedText);
 
     // Try to use AI Manager for intelligent responses
     try {

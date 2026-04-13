@@ -3,6 +3,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { dbPapers } from '@/db/index-papers';
+import { paperChats } from '@/db/index-papers';
+import { eq } from 'drizzle-orm';
 
 // GET - 获取对话历史
 export async function GET(
@@ -15,11 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid paper ID' }, { status: 400 });
     }
 
-    const { db } = await import('@/db');
-    const { paperChats } = await import('@/db/schema-papers');
-    const { eq } = await import('drizzle-orm');
-
-    const chats = await db
+    const chats = await dbPapers
       .select()
       .from(paperChats)
       .where(eq(paperChats.paperId, paperId))
@@ -68,10 +67,7 @@ export async function POST(
       );
     }
 
-    const { db } = await import('@/db');
-    const { paperChats } = await import('@/db/schema-papers');
-
-    const result = await db
+    const result = await dbPapers
       .insert(paperChats)
       .values({
         paperId,
@@ -104,11 +100,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid paper ID' }, { status: 400 });
     }
 
-    const { db } = await import('@/db');
-    const { paperChats } = await import('@/db/schema-papers');
-    const { eq } = await import('drizzle-orm');
-
-    await db.delete(paperChats).where(eq(paperChats.paperId, paperId));
+    await dbPapers.delete(paperChats).where(eq(paperChats.paperId, paperId));
 
     return NextResponse.json({
       success: true,
