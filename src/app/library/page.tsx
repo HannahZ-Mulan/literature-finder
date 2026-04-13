@@ -57,8 +57,6 @@ function LibraryContent() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
   const [isAddingToList, setIsAddingToList] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [error, setError] = useState('');
   const [readingLists, setReadingLists] = useState<Array<{ id: number; name: string; description?: string }>>([]);
   const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
   const [isMovingToCategory, setIsMovingToCategory] = useState(false);
@@ -251,8 +249,6 @@ function LibraryContent() {
     if (selectedIds.size === 0) return;
 
     setIsExporting(true);
-    setError('');
-    setSuccessMessage('');
     try {
       const formats = ['apa', 'mla', 'chicago', 'harvard', 'vancouver', 'bibtex'];
 
@@ -281,11 +277,16 @@ function LibraryContent() {
         await new Promise(resolve => setTimeout(resolve, 200));
       }
 
-      setSuccessMessage(`已下载 ${selectedIds.size} 篇文献的 6 种格式`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      toast({
+        title: "操作成功",
+        description: `已下载 ${selectedIds.size} 篇文献的 6 种格式`,
+      });
     } catch (err: any) {
-      setError('批量导出失败: ' + err.message);
-      setTimeout(() => setError(''), 5000);
+      toast({
+        variant: "destructive",
+        title: "操作失败",
+        description: '批量导出失败: ' + err.message,
+      });
     } finally {
       setIsExporting(false);
     }
@@ -296,8 +297,6 @@ function LibraryContent() {
     if (selectedIds.size === 0) return;
 
     setIsAddingToList(true);
-    setError('');
-    setSuccessMessage('');
     try {
       let successCount = 0;
 
@@ -316,12 +315,17 @@ function LibraryContent() {
         }
       }
 
-      setSuccessMessage(`成功添加 ${successCount}/${selectedIds.size} 篇文献到阅读列表`);
+      toast({
+        title: "操作成功",
+        description: `成功添加 ${successCount}/${selectedIds.size} 篇文献到阅读列表`,
+      });
       setSelectedIds(new Set());
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
-      setError('批量添加失败: ' + err.message);
-      setTimeout(() => setError(''), 5000);
+      toast({
+        variant: "destructive",
+        title: "操作失败",
+        description: '批量添加失败: ' + err.message,
+      });
     } finally {
       setIsAddingToList(false);
     }
@@ -332,8 +336,6 @@ function LibraryContent() {
     if (selectedIds.size === 0) return;
 
     setIsMovingToCategory(true);
-    setError('');
-    setSuccessMessage('');
     try {
       // If in a category view, remove from current category first
       if (selectedCategoryId) {
@@ -370,12 +372,17 @@ function LibraryContent() {
       }
 
       const categoryName = categories.find(c => c.id === categoryId)?.name || '分类';
-      setSuccessMessage(`成功移动 ${selectedIds.size} 篇文献到 "${categoryName}"`);
+      toast({
+        title: "操作成功",
+        description: `成功移动 ${selectedIds.size} 篇文献到 "${categoryName}"`,
+      });
       setSelectedIds(new Set());
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
-      setError('移动失败: ' + err.message);
-      setTimeout(() => setError(''), 5000);
+      toast({
+        variant: "destructive",
+        title: "操作失败",
+        description: '移动失败: ' + err.message,
+      });
     } finally {
       setIsMovingToCategory(false);
     }
@@ -386,8 +393,6 @@ function LibraryContent() {
     if (selectedIds.size === 0 || !selectedCategoryId) return;
 
     setIsMovingToOtherCategory(true);
-    setError('');
-    setSuccessMessage('');
     try {
       // Remove from current category
       await fetch('/api/literature/batch/categories/remove', {
@@ -422,12 +427,17 @@ function LibraryContent() {
       }
 
       const categoryName = categories.find(c => c.id === targetCategoryId)?.name || '分类';
-      setSuccessMessage(`成功移动 ${selectedIds.size} 篇文献到 "${categoryName}"`);
+      toast({
+        title: "操作成功",
+        description: `成功移动 ${selectedIds.size} 篇文献到 "${categoryName}"`,
+      });
       setSelectedIds(new Set());
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
-      setError('移动失败: ' + err.message);
-      setTimeout(() => setError(''), 5000);
+      toast({
+        variant: "destructive",
+        title: "操作失败",
+        description: '移动失败: ' + err.message,
+      });
     } finally {
       setIsMovingToOtherCategory(false);
     }
@@ -438,8 +448,6 @@ function LibraryContent() {
     if (selectedIds.size === 0 || !selectedCategoryId) return;
 
     setIsRemovingFromCategory(true);
-    setError('');
-    setSuccessMessage('');
     try {
       const response = await fetch('/api/literature/batch/categories/remove', {
         method: 'POST',
@@ -460,12 +468,17 @@ function LibraryContent() {
       }
 
       const categoryName = categories.find(c => c.id === selectedCategoryId)?.name || '分类';
-      setSuccessMessage(`成功从 "${categoryName}" 移除 ${selectedIds.size} 篇文献`);
+      toast({
+        title: "操作成功",
+        description: `成功从 "${categoryName}" 移除 ${selectedIds.size} 篇文献`,
+      });
       setSelectedIds(new Set());
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
-      setError('移除失败: ' + err.message);
-      setTimeout(() => setError(''), 5000);
+      toast({
+        variant: "destructive",
+        title: "操作失败",
+        description: '移除失败: ' + err.message,
+      });
     } finally {
       setIsRemovingFromCategory(false);
     }
@@ -519,7 +532,6 @@ function LibraryContent() {
     }
 
     setIsDeleting(true);
-    setError('');
     try {
       const response = await fetch('/api/literature/batch/delete', {
         method: 'POST',
@@ -641,34 +653,6 @@ function LibraryContent() {
 
         {/* Main content */}
         <div className="flex-1 space-y-6">
-        {/* Success/Error Messages */}
-        {successMessage && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4" />
-              <span className="text-sm">{successMessage}</span>
-            </div>
-            <button
-              onClick={() => setSuccessMessage('')}
-              className="text-green-600 hover:text-green-800"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center justify-between">
-            <span className="text-sm">{error}</span>
-            <button
-              onClick={() => setError('')}
-              className="text-red-600 hover:text-red-800"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
         {/* Header with batch operations toolbar */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
