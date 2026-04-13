@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowLeft, Sparkles, MessageSquare, FileText, Languages, FileOutput } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, MessageSquare, FileText, Languages, FileOutput, CheckCircle2, AlertCircle } from 'lucide-react';
 import { formatPDFText } from '@/lib/text-formatter';
 import { cleanMarkdown } from '@/lib/markdown-cleaner';
+import { useToast } from '@/hooks/use-toast';
 
 interface Paper {
   id: number;
@@ -28,19 +29,27 @@ interface ChineseSummary {
 }
 
 interface CoreInsights {
-  oneSentence: string;
-  keyFindings: string[];
-  qualityAssessment: string; // 新增：质量判断
-  practicalValue: {
-    students: string;
-    professionals: string;
-    general: string;
+  one_sentence_summary: string;
+  research_question: string;
+  methods: string;
+  key_findings: string[];
+  contributions: string[];
+  limitations: string[];
+  applications: {
+    researcher: string;
+    clinician: string;
+    policy_maker: string;
+  };
+  quality_assessment: {
+    level: 'high' | 'medium' | 'low';
+    reason: string;
   };
 }
 
 export default function PaperReaderPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const [paper, setPaper] = useState<Paper | null>(null);
   const [chineseSummary, setChineseSummary] = useState<ChineseSummary | null>(null);
   const [humanChineseSummary, setHumanChineseSummary] = useState<string | null>(null);
@@ -55,6 +64,7 @@ export default function PaperReaderPage() {
   const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [isChatting, setIsChatting] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showRecommendedQuestions, setShowRecommendedQuestions] = useState(true);
   const [recommendedQuestions, setRecommendedQuestions] = useState<string[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
@@ -141,9 +151,17 @@ export default function PaperReaderPage() {
       }
 
       setChatHistory([]);
+      toast({
+        title: "对话已清空",
+        description: "所有对话历史已删除",
+      });
     } catch (error) {
       console.error('Error clearing chat history:', error);
-      alert(error instanceof Error ? error.message : 'Failed to clear chat history');
+      toast({
+        variant: "destructive",
+        title: "清空失败",
+        description: error instanceof Error ? error.message : 'Failed to clear chat history',
+      });
     }
   };
 
@@ -161,9 +179,17 @@ export default function PaperReaderPage() {
       }
 
       setChineseSummary(data.summary);
+      toast({
+        title: "摘要生成成功",
+        description: "AI摘要已生成完成",
+      });
     } catch (error) {
       console.error('Error generating summary:', error);
-      alert(error instanceof Error ? error.message : 'Failed to generate summary');
+      toast({
+        variant: "destructive",
+        title: "摘要生成失败",
+        description: error instanceof Error ? error.message : 'Failed to generate summary',
+      });
     } finally {
       setIsGeneratingSummary(false);
     }
@@ -183,9 +209,17 @@ export default function PaperReaderPage() {
       }
 
       setHumanChineseSummary(data.summary);
+      toast({
+        title: "中文解读生成成功",
+        description: "AI生成的中文摘要已完成",
+      });
     } catch (error) {
       console.error('Error generating Chinese summary:', error);
-      alert(error instanceof Error ? error.message : 'Failed to generate Chinese summary');
+      toast({
+        variant: "destructive",
+        title: "中文解读生成失败",
+        description: error instanceof Error ? error.message : 'Failed to generate Chinese summary',
+      });
     } finally {
       setIsGeneratingHumanSummary(false);
     }
@@ -205,9 +239,17 @@ export default function PaperReaderPage() {
       }
 
       setCoreInsights(data.insights);
+      toast({
+        title: "核心解读生成成功",
+        description: "AI分析已完成，包含研究发现、质量评估等",
+      });
     } catch (error) {
       console.error('Error generating core insights:', error);
-      alert(error instanceof Error ? error.message : 'Failed to generate core insights');
+      toast({
+        variant: "destructive",
+        title: "核心解读生成失败",
+        description: error instanceof Error ? error.message : 'Failed to generate core insights',
+      });
     } finally {
       setIsGeneratingCoreInsights(false);
     }
@@ -242,6 +284,7 @@ export default function PaperReaderPage() {
 
   const handleQuestionClick = (question: string) => {
     setChatQuestion(question);
+    setShowRecommendedQuestions(false); // 隐藏推荐问题，显示对话
     // 自动发送问题
     setTimeout(() => {
       handleChat();
@@ -283,7 +326,11 @@ export default function PaperReaderPage() {
       await saveChatMessage('assistant', data.answer);
     } catch (error) {
       console.error('Error chatting:', error);
-      alert(error instanceof Error ? error.message : 'Failed to chat');
+      toast({
+        variant: "destructive",
+        title: "AI对话失败",
+        description: error instanceof Error ? error.message : 'Failed to chat',
+      });
     } finally {
       setIsChatting(false);
     }
@@ -312,9 +359,17 @@ export default function PaperReaderPage() {
       }
 
       setTranslation(data.translation);
+      toast({
+        title: "翻译完成",
+        description: "文本已成功翻译为中文",
+      });
     } catch (error) {
       console.error('Translation error:', error);
-      alert(error instanceof Error ? error.message : 'Translation failed');
+      toast({
+        variant: "destructive",
+        title: "翻译失败",
+        description: error instanceof Error ? error.message : 'Translation failed',
+      });
     } finally {
       setIsTranslating(false);
     }
@@ -533,12 +588,50 @@ export default function PaperReaderPage() {
                         一句话总结
                       </h3>
                       <p className="text-base font-medium leading-relaxed text-gray-900 dark:text-gray-100">
-                        {coreInsights.oneSentence}
+                        {coreInsights.one_sentence_summary}
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Research Question */}
+              {coreInsights.research_question && (
+                <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">❓</span>
+                      <div className="flex-1">
+                        <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">
+                          研究问题
+                        </h3>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {coreInsights.research_question}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Methods */}
+              {coreInsights.methods && (
+                <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">🔬</span>
+                      <div className="flex-1">
+                        <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">
+                          研究方法
+                        </h3>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {coreInsights.methods}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Key Findings */}
               <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
@@ -550,7 +643,7 @@ export default function PaperReaderPage() {
                         核心发现
                       </h3>
                       <div className="space-y-3">
-                        {coreInsights.keyFindings.map((finding, idx) => (
+                        {coreInsights.key_findings.map((finding, idx) => (
                           <div key={idx} className="flex gap-3">
                             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">
                               {idx + 1}
@@ -566,8 +659,60 @@ export default function PaperReaderPage() {
                 </CardContent>
               </Card>
 
+              {/* Contributions */}
+              {coreInsights.contributions && coreInsights.contributions.length > 0 && (
+                <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">🌟</span>
+                      <div className="flex-1">
+                        <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">
+                          主要贡献
+                        </h3>
+                        <div className="space-y-2">
+                          {coreInsights.contributions.map((contribution, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <span className="flex-shrink-0 text-blue-500">✓</span>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                {contribution}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Limitations */}
+              {coreInsights.limitations && coreInsights.limitations.length > 0 && (
+                <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">⚠️</span>
+                      <div className="flex-1">
+                        <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">
+                          局限性
+                        </h3>
+                        <div className="space-y-2">
+                          {coreInsights.limitations.map((limitation, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <span className="flex-shrink-0 text-orange-500">!</span>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                {limitation}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Quality Assessment - NEW */}
-              {coreInsights.qualityAssessment && (
+              {coreInsights.quality_assessment && (
                 <Card className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 dark:border-purple-800">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-3">
@@ -576,8 +721,20 @@ export default function PaperReaderPage() {
                         <h3 className="text-xs font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wide mb-2">
                           研究质量判断
                         </h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            coreInsights.quality_assessment.level === 'high'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                              : coreInsights.quality_assessment.level === 'medium'
+                              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                          }`}>
+                            {coreInsights.quality_assessment.level === 'high' ? '高质量' :
+                             coreInsights.quality_assessment.level === 'medium' ? '中等质量' : '低质量'}
+                          </span>
+                        </div>
                         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                          {coreInsights.qualityAssessment}
+                          {coreInsights.quality_assessment.reason}
                         </p>
                       </div>
                     </div>
@@ -594,36 +751,36 @@ export default function PaperReaderPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* For Students */}
+                  {/* For Researchers */}
                   <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
                     <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
-                      <span>🎓</span>
-                      对学生 / 研究者
+                      <span>🔬</span>
+                      对研究人员
                     </h4>
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
-                      {coreInsights.practicalValue.students}
+                      {coreInsights.applications.researcher}
                     </p>
                   </div>
 
-                  {/* For Professionals */}
+                  {/* For Clinicians */}
                   <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
                     <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
-                      <span>💼</span>
-                      对职场人 / 产品经理
+                      <span>🏥</span>
+                      对临床医生
                     </h4>
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
-                      {coreInsights.practicalValue.professionals}
+                      {coreInsights.applications.clinician}
                     </p>
                   </div>
 
-                  {/* For General Users */}
+                  {/* For Policy Makers */}
                   <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
                     <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
-                      <span>🌱</span>
-                      对普通人 / 日常生活
+                      <span>📋</span>
+                      对政策制定者
                     </h4>
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
-                      {coreInsights.practicalValue.general}
+                      {coreInsights.applications.policy_maker}
                     </p>
                   </div>
                 </CardContent>
@@ -702,16 +859,29 @@ export default function PaperReaderPage() {
                   <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
                   AI 对话助手
                 </div>
-                {showChat && chatHistory.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearChatHistory}
-                    className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
-                  >
-                    清空对话
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {showChat && chatHistory.length > 0 && !showRecommendedQuestions && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowRecommendedQuestions(true)}
+                      className="text-xs text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950"
+                    >
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      返回推荐问题
+                    </Button>
+                  )}
+                  {showChat && chatHistory.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearChatHistory}
+                      className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
+                    >
+                      清空对话
+                    </Button>
+                  )}
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -727,8 +897,18 @@ export default function PaperReaderPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* 提示信息：告知用户可以切换 */}
+                  {chatHistory.length > 0 && !showRecommendedQuestions && (
+                    <div className="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                      <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+                        <Sparkles className="w-4 h-4" />
+                        <span>点击右上角的"返回推荐问题"按钮查看其他问题</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="bg-white dark:bg-gray-900 rounded-lg border border-green-200 dark:border-green-800 p-4 max-h-80 overflow-y-auto space-y-3">
-                    {chatHistory.length === 0 ? (
+                    {showRecommendedQuestions || chatHistory.length === 0 ? (
                       <div className="space-y-3">
                         {isLoadingQuestions ? (
                           <div className="flex items-center justify-center py-8">
@@ -737,6 +917,11 @@ export default function PaperReaderPage() {
                           </div>
                         ) : recommendedQuestions.length > 0 ? (
                           <div className="space-y-2">
+                            {chatHistory.length > 0 && (
+                              <p className="text-xs text-muted-foreground mb-2 italic">
+                                💡 点击问题继续提问，或点击右上角返回对话历史
+                              </p>
+                            )}
                             <p className="text-sm font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
                               <Sparkles className="w-4 h-4" />
                               推荐问题（点击即可提问）
@@ -759,19 +944,35 @@ export default function PaperReaderPage() {
                         )}
                       </div>
                     ) : (
-                      chatHistory.map((msg, idx) => (
-                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[80%] rounded-lg p-3 ${
-                            msg.role === 'user'
-                              ? 'bg-green-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
-                          }`}>
-                            <p className="text-sm whitespace-pre-wrap">
-                              {msg.role === 'assistant' ? cleanMarkdown(msg.content) : msg.content}
-                            </p>
-                          </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700">
+                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            对话历史
+                          </span>
+                          {chatHistory.length > 0 && (
+                            <button
+                              onClick={() => setShowRecommendedQuestions(true)}
+                              className="text-xs text-green-600 hover:text-green-700 dark:text-green-400 flex items-center gap-1"
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              查看推荐问题
+                            </button>
+                          )}
                         </div>
-                      ))
+                        {chatHistory.map((msg, idx) => (
+                          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[80%] rounded-lg p-3 ${
+                              msg.role === 'user'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                            }`}>
+                              <p className="text-sm whitespace-pre-wrap">
+                                {msg.role === 'assistant' ? cleanMarkdown(msg.content) : msg.content}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                     {isChatting && (
                       <div className="flex justify-start">
