@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, ArrowLeft, Sparkles, MessageSquare, FileText, Languages, FileOutput, CheckCircle2, AlertCircle } from 'lucide-react';
 import { formatPDFText } from '@/lib/text-formatter';
 import { cleanMarkdown } from '@/lib/markdown-cleaner';
@@ -405,27 +404,40 @@ export default function PaperReaderPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-6">
         <Button variant="ghost" onClick={() => router.push('/upload')} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
           返回上传
         </Button>
-        <h1 className="text-2xl font-bold">{paper.title}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">{paper.title}</h1>
+          <Button
+            onClick={handleGeneratePPT}
+            disabled={isGeneratingPPT}
+            variant="outline"
+            className="gap-2"
+          >
+            {isGeneratingPPT ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                生成中...
+              </>
+            ) : (
+              <>
+                <FileOutput className="w-4 h-4" />
+                生成PPT
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="fulltext" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="fulltext">全文</TabsTrigger>
-          <TabsTrigger value="ai-insights">AI解读</TabsTrigger>
-          <TabsTrigger value="ai-chat">AI对话</TabsTrigger>
-          <TabsTrigger value="ppt">PPT</TabsTrigger>
-        </TabsList>
-
-        {/* Tab 1: Full Text */}
-        <TabsContent value="fulltext" className="space-y-4 mt-6">
+      {/* Two Column Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Full Text + Translation (Fixed) */}
+        <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -524,10 +536,11 @@ export default function PaperReaderPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
 
-        {/* Tab 2: AI Insights */}
-        <TabsContent value="ai-insights" className="space-y-4 mt-6">
+        {/* Right Column: All AI Features (Scrollable with Sticky) */}
+        <div className="sticky top-4 space-y-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
+          {/* AI Core Insights */}
           {!coreInsights ? (
             <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 border-amber-200 dark:border-amber-800">
               <CardHeader>
@@ -769,74 +782,10 @@ export default function PaperReaderPage() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Full Text Summary (Collapsible) */}
-              <details className="group">
-                <summary className="cursor-pointer">
-                  <Card className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                    <CardHeader className="py-3">
-                      <CardTitle className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4" />
-                          查看完整AI解读
-                        </div>
-                        <span className="text-xs text-muted-foreground group-open:rotate-180 transition-transform">
-                          ▼
-                        </span>
-                      </CardTitle>
-                    </CardHeader>
-                  </Card>
-                </summary>
-                <Card className="mt-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <Button
-                        onClick={handleGenerateSummary}
-                        disabled={isGeneratingSummary}
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                      >
-                        {isGeneratingSummary ? '生成中...' : '生成结构化摘要'}
-                      </Button>
-                      {chineseSummary && (
-                        <div className="space-y-4 mt-4">
-                          <div>
-                            <h4 className="font-medium text-sm mb-2">📝 一句话总结</h4>
-                            <p className="text-sm text-muted-foreground">{chineseSummary.one_sentence}</p>
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-sm mb-2">❓ 研究问题</h4>
-                            <p className="text-sm text-muted-foreground">{chineseSummary.research_question}</p>
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-sm mb-2">⚙️ 方法</h4>
-                            <p className="text-sm text-muted-foreground">{chineseSummary.method}</p>
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-sm mb-2">🎯 关键发现</h4>
-                            <p className="text-sm text-muted-foreground">{chineseSummary.key_findings}</p>
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-sm mb-2">💡 贡献</h4>
-                            <p className="text-sm text-muted-foreground">{chineseSummary.contribution}</p>
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-sm mb-2">⚠️ 局限性</h4>
-                            <p className="text-sm text-muted-foreground">{chineseSummary.limitations}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </details>
             </div>
           )}
-        </TabsContent>
 
-        {/* Tab 3: AI Chat */}
-        <TabsContent value="ai-chat" className="mt-6">
+          {/* AI Chat */}
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -992,68 +941,72 @@ export default function PaperReaderPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Tab 4: PPT */}
-        <TabsContent value="ppt" className="mt-6">
-          <Card className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 dark:border-orange-800">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-6">
-                <div>
-                  <FileOutput className="w-16 h-16 mx-auto mb-4 text-orange-600 dark:text-orange-400" />
-                  <h3 className="text-xl font-semibold mb-2">生成演示文稿</h3>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    使用AI自动生成5页PPT，包含论文的核心内容、研究发现和主要结论
-                  </p>
-                </div>
-
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 max-w-md mx-auto">
-                  <p className="text-xs text-orange-600 dark:text-orange-400 mb-3">
-                    ⚡ 实验性功能
-                  </p>
-                  <ul className="text-xs text-left space-y-2 text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <span className="text-orange-500">•</span>
-                      <span>自动提取论文核心内容</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-orange-500">•</span>
-                      <span>生成结构化5页幻灯片</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-orange-500">•</span>
-                      <span>支持实时预览和编辑</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <Button
-                  onClick={handleGeneratePPT}
-                  disabled={isGeneratingPPT}
-                  size="lg"
-                  className="w-full max-w-sm"
-                >
-                  {isGeneratingPPT ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      生成中...
-                    </>
-                  ) : (
-                    <>
-                      <FileOutput className="w-5 h-5 mr-2" />
-                      开始生成 PPT
-                    </>
-                  )}
-                </Button>
-
-                <p className="text-xs text-muted-foreground">
-                  生成后将跳转到PPT预览页面，您可以继续编辑或下载
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          {/* Full Text Summary (Collapsible) */}
+          {coreInsights && (
+            <details className="group">
+              <summary className="cursor-pointer">
+                <Card className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                  <CardHeader className="py-3">
+                    <CardTitle className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        查看完整AI解读
+                      </div>
+                      <span className="text-xs text-muted-foreground group-open:rotate-180 transition-transform">
+                        ▼
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+              </summary>
+              <Card className="mt-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    <Button
+                      onClick={handleGenerateSummary}
+                      disabled={isGeneratingSummary}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      {isGeneratingSummary ? '生成中...' : '生成结构化摘要'}
+                    </Button>
+                    {chineseSummary && (
+                      <div className="space-y-4 mt-4">
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">📝 一句话总结</h4>
+                          <p className="text-sm text-muted-foreground">{chineseSummary.one_sentence}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">❓ 研究问题</h4>
+                          <p className="text-sm text-muted-foreground">{chineseSummary.research_question}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">⚙️ 方法</h4>
+                          <p className="text-sm text-muted-foreground">{chineseSummary.method}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">🎯 关键发现</h4>
+                          <p className="text-sm text-muted-foreground">{chineseSummary.key_findings}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">💡 贡献</h4>
+                          <p className="text-sm text-muted-foreground">{chineseSummary.contribution}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">⚠️ 局限性</h4>
+                          <p className="text-sm text-muted-foreground">{chineseSummary.limitations}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </details>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
