@@ -53,7 +53,6 @@ export function LiteratureNoteSidebar({
   const [isToRead, setIsToRead] = useState(false);
   const [readingProgress, setReadingProgress] = useState('');
   const [saving, setSaving] = useState(false);
-  const isMounted = useRef(true);
 
   // Load data when sidebar opens
   useEffect(() => {
@@ -61,9 +60,6 @@ export function LiteratureNoteSidebar({
       loadNotes();
       loadMarks();
     }
-    return () => {
-      isMounted.current = false;
-    };
   }, [isOpen]);
 
   async function loadNotes() {
@@ -71,9 +67,7 @@ export function LiteratureNoteSidebar({
       const response = await fetch(`/api/literature/${literatureId}/notes`);
       if (response.ok) {
         const data = await response.json();
-        if (isMounted.current) {
-          setNotes(data.notes || []);
-        }
+        setNotes(data.notes || []);
       }
     } catch (error) {
       console.error('Failed to load notes:', error);
@@ -85,12 +79,10 @@ export function LiteratureNoteSidebar({
       const response = await fetch(`/api/notes?literatureId=${literatureId}`);
       if (response.ok) {
         const data = await response.json();
-        if (isMounted.current) {
-          setIsFavorite(data.is_favorite || false);
-          setIsLiked(data.is_liked || false);
-          setIsToRead(data.is_to_read || false);
-          setReadingProgress(data.reading_progress?.toString() || '');
-        }
+        setIsFavorite(data.is_favorite || false);
+        setIsLiked(data.is_liked || false);
+        setIsToRead(data.is_to_read || false);
+        setReadingProgress(data.reading_progress?.toString() || '');
       }
     } catch (error) {
       console.error('Failed to load marks:', error);
@@ -98,8 +90,12 @@ export function LiteratureNoteSidebar({
   }
 
   async function handleSaveNote() {
-    if (!newNote.trim()) return;
+    if (!newNote.trim()) {
+      console.log('[handleSaveNote] Note is empty, returning');
+      return;
+    }
 
+    console.log('[handleSaveNote] Starting to save note:', newNote.substring(0, 50));
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
@@ -143,15 +139,23 @@ export function LiteratureNoteSidebar({
       console.log('response status:', response.status);
 
       if (response.ok) {
+        console.log('[handleSaveNote] Response OK, parsing JSON...');
         const data = await response.json();
-        if (isMounted.current) {
-          setNotes(prev => [data.note, ...prev]);
-          setNewNote('');
-          toast({
-            title: "笔记已保存",
-            description: "你的笔记已成功保存",
-          });
-        }
+        console.log('[handleSaveNote] Parsed data:', data);
+        console.log('[handleSaveNote] Updating notes state...');
+        setNotes(prev => {
+          const newNotes = [data.note, ...prev];
+          console.log('[handleSaveNote] New notes array:', newNotes);
+          return newNotes;
+        });
+        console.log('[handleSaveNote] Clearing input...');
+        setNewNote('');
+        console.log('[handleSaveNote] Showing toast...');
+        toast({
+          title: "笔记已保存",
+          description: "你的笔记已成功保存",
+        });
+        console.log('[handleSaveNote] Done!');
       } else {
         const errorData = await response.json().catch(() => ({ error: '保存失败' }));
         console.error('Save failed:', response.status, errorData);
@@ -169,9 +173,7 @@ export function LiteratureNoteSidebar({
         variant: "destructive",
       });
     } finally {
-      if (isMounted.current) {
-        setSaving(false);
-      }
+      setSaving(false);
     }
   }
 
@@ -202,7 +204,7 @@ export function LiteratureNoteSidebar({
       });
       console.log('response status:', response.status);
 
-      if (response.ok && isMounted.current) {
+      if (response.ok) {
         const data = await response.json();
         setNotes(prev => prev.map(n => n.id === noteId ? { ...n, content: data.note.content } : n));
         setEditingId(null);
@@ -211,8 +213,6 @@ export function LiteratureNoteSidebar({
           title: "笔记已更新",
           description: "笔记更新成功",
         });
-      } else if (!isMounted.current) {
-        return;
       } else {
         const errorData = await response.json().catch(() => ({ error: '更新失败' }));
         console.error('Update failed:', response.status, errorData);
@@ -254,7 +254,7 @@ export function LiteratureNoteSidebar({
       });
       console.log('response status:', response.status);
 
-      if (response.ok && isMounted.current) {
+      if (response.ok) {
         setNotes(prev => prev.filter(n => n.id !== noteId));
         toast({
           title: "笔记已删除",
