@@ -103,16 +103,31 @@ export function LiteratureNoteSidebar({
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No auth token found');
+
+      // 开发模式：即使没有token也发送请求（后端会使用test user）
+      if (!token && process.env.NODE_ENV !== 'development') {
+        console.error('No auth token found in production mode');
+        toast({
+          title: "保存失败",
+          description: "请先登录",
+          variant: "destructive",
+        });
+        setSaving(false);
         return;
       }
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // 只有在有token时才添加Authorization header
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/literature/${literatureId}/notes`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify({
           content: newNote,
           quote: null,
@@ -122,7 +137,8 @@ export function LiteratureNoteSidebar({
 
       console.log('saving note...', {
         literatureId,
-        token: token?.slice?.(0, 10)
+        hasToken: !!token,
+        env: process.env.NODE_ENV,
       });
       console.log('response status:', response.status);
 
@@ -131,14 +147,27 @@ export function LiteratureNoteSidebar({
         if (isMounted.current) {
           setNotes(prev => [data.note, ...prev]);
           setNewNote('');
-          // 简化反馈 - 不使用toast
-          console.log('Note saved successfully');
+          toast({
+            title: "笔记已保存",
+            description: "你的笔记已成功保存",
+          });
         }
       } else {
-        console.error('Save failed:', response.status);
+        const errorData = await response.json().catch(() => ({ error: '保存失败' }));
+        console.error('Save failed:', response.status, errorData);
+        toast({
+          title: "保存失败",
+          description: errorData.error || "请稍后重试",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Failed to save note:', error);
+      toast({
+        title: "保存失败",
+        description: "网络错误，请稍后重试",
+        variant: "destructive",
+      });
     } finally {
       if (isMounted.current) {
         setSaving(false);
@@ -151,23 +180,25 @@ export function LiteratureNoteSidebar({
 
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No auth token found');
-        return;
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
+
       const response = await fetch(`/api/literature/${literatureId}/notes/${noteId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify({ content: editContent }),
       });
 
       console.log('updating note...', {
         literatureId,
         noteId,
-        token: token?.slice?.(0, 10)
+        hasToken: !!token,
       });
       console.log('response status:', response.status);
 
@@ -176,46 +207,75 @@ export function LiteratureNoteSidebar({
         setNotes(prev => prev.map(n => n.id === noteId ? { ...n, content: data.note.content } : n));
         setEditingId(null);
         setEditContent('');
-        console.log('Note updated successfully');
+        toast({
+          title: "笔记已更新",
+          description: "笔记更新成功",
+        });
       } else if (!isMounted.current) {
         return;
       } else {
-        console.error('Update failed:', response.status);
+        const errorData = await response.json().catch(() => ({ error: '更新失败' }));
+        console.error('Update failed:', response.status, errorData);
+        toast({
+          title: "更新失败",
+          description: errorData.error || "请稍后重试",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Failed to update note:', error);
+      toast({
+        title: "更新失败",
+        description: "网络错误，请稍后重试",
+        variant: "destructive",
+      });
     }
   }
 
   async function handleDeleteNote(noteId: number) {
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No auth token found');
-        return;
+
+      const headers: Record<string, string> = {};
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
+
       const response = await fetch(`/api/literature/${literatureId}/notes/${noteId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers,
       });
 
       console.log('deleting note...', {
         literatureId,
         noteId,
-        token: token?.slice?.(0, 10)
+        hasToken: !!token,
       });
       console.log('response status:', response.status);
 
       if (response.ok && isMounted.current) {
         setNotes(prev => prev.filter(n => n.id !== noteId));
-        console.log('Note deleted successfully');
+        toast({
+          title: "笔记已删除",
+          description: "笔记删除成功",
+        });
       } else {
-        console.error('Delete failed:', response.status);
+        const errorData = await response.json().catch(() => ({ error: '删除失败' }));
+        console.error('Delete failed:', response.status, errorData);
+        toast({
+          title: "删除失败",
+          description: errorData.error || "请稍后重试",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Failed to delete note:', error);
+      toast({
+        title: "删除失败",
+        description: "网络错误，请稍后重试",
+        variant: "destructive",
+      });
     }
   }
 
