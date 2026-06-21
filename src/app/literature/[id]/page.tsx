@@ -489,9 +489,12 @@ export default function LiteratureDetailPage() {
               <Wand className="w-4 h-4" />
               AI助手
             </TabsTrigger>
-            <TabsTrigger value="pdf" className="gap-2" disabled={!literature.pdf_url}>
+            <TabsTrigger value="pdf" className="gap-2">
               <BookOpen className="w-4 h-4" />
               PDF阅读
+              {!literature.pdf_url && (
+                <span className="text-xs text-muted-foreground">(无PDF)</span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="notes" className="gap-2">
               <StickyNote className="w-4 h-4" />
