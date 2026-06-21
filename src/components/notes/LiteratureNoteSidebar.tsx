@@ -90,19 +90,14 @@ export function LiteratureNoteSidebar({
   }
 
   async function handleSaveNote() {
-    if (!newNote.trim()) {
-      console.log('[handleSaveNote] Note is empty, returning');
-      return;
-    }
+    if (!newNote.trim()) return;
 
-    console.log('[handleSaveNote] Starting to save note:', newNote.substring(0, 50));
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
 
       // 开发模式：即使没有token也发送请求（后端会使用test user）
       if (!token && process.env.NODE_ENV !== 'development') {
-        console.error('No auth token found in production mode');
         toast({
           title: "保存失败",
           description: "请先登录",
@@ -116,7 +111,6 @@ export function LiteratureNoteSidebar({
         'Content-Type': 'application/json',
       };
 
-      // 只有在有token时才添加Authorization header
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -131,31 +125,14 @@ export function LiteratureNoteSidebar({
         }),
       });
 
-      console.log('saving note...', {
-        literatureId,
-        hasToken: !!token,
-        env: process.env.NODE_ENV,
-      });
-      console.log('response status:', response.status);
-
       if (response.ok) {
-        console.log('[handleSaveNote] Response OK, parsing JSON...');
         const data = await response.json();
-        console.log('[handleSaveNote] Parsed data:', data);
-        console.log('[handleSaveNote] Updating notes state...');
-        setNotes(prev => {
-          const newNotes = [data.note, ...prev];
-          console.log('[handleSaveNote] New notes array:', newNotes);
-          return newNotes;
-        });
-        console.log('[handleSaveNote] Clearing input...');
+        setNotes(prev => [data.note, ...prev]);
         setNewNote('');
-        console.log('[handleSaveNote] Showing toast...');
         toast({
           title: "笔记已保存",
           description: "你的笔记已成功保存",
         });
-        console.log('[handleSaveNote] Done!');
       } else {
         const errorData = await response.json().catch(() => ({ error: '保存失败' }));
         console.error('Save failed:', response.status, errorData);
@@ -196,13 +173,6 @@ export function LiteratureNoteSidebar({
         headers,
         body: JSON.stringify({ content: editContent }),
       });
-
-      console.log('updating note...', {
-        literatureId,
-        noteId,
-        hasToken: !!token,
-      });
-      console.log('response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
@@ -246,13 +216,6 @@ export function LiteratureNoteSidebar({
         method: 'DELETE',
         headers,
       });
-
-      console.log('deleting note...', {
-        literatureId,
-        noteId,
-        hasToken: !!token,
-      });
-      console.log('response status:', response.status);
 
       if (response.ok) {
         setNotes(prev => prev.filter(n => n.id !== noteId));
