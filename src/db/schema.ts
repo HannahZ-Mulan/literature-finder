@@ -243,9 +243,29 @@ export const uploadedPapers = sqliteTable('uploaded_papers', {
   extractedPages: integer('extracted_pages'), // 已提取页数
   extractionMethod: text('extraction_method'), // 'pdfjs', 'ocr', 'mixed'
   summary: text('summary'), // JSON string with structured summary
+  googleScholarUrl: text('google_scholar_url'), // Google Scholar搜索链接
+  abstract: text('abstract'), // 论文摘要（用于Google Scholar搜索）
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
 });
 
 export type UploadedPaper = typeof uploadedPapers.$inferSelect;
 export type NewUploadedPaper = typeof uploadedPapers.$inferInsert;
+
+// Paper Chunks - section-based chunks for uploaded papers
+export const paperChunks = sqliteTable('paper_chunks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  paper_id: integer('paper_id').notNull().references(() => uploadedPapers.id, { onDelete: 'cascade' }),
+  chunk_type: text('chunk_type').notNull(), // abstract, introduction, methods, results, discussion, conclusion, references, appendix, unknown
+  chunk_text: text('chunk_text').notNull(),
+  char_start: integer('char_start').notNull(),
+  char_end: integer('char_end').notNull(),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+}, (table) => ({
+  paperIdIdx: index('paper_chunks_paper_id_idx').on(table.paper_id),
+  chunkTypeIdx: index('paper_chunks_chunk_type_idx').on(table.chunk_type),
+  charStartIdx: index('paper_chunks_char_start_idx').on(table.char_start),
+}));
+
+export type PaperChunk = typeof paperChunks.$inferSelect;
+export type NewPaperChunk = typeof paperChunks.$inferInsert;

@@ -5,6 +5,8 @@ import { join } from 'path';
 import { extractPDFSimple } from '@/lib/pdf-extractor-simple';
 import { dbPapers, papers } from '@/db/index-papers';
 import { sql, eq } from 'drizzle-orm';
+import { detectSections } from '@/lib/chunker/section-detector';
+import { storeChunks } from '@/lib/chunker/chunk-storage';
 
 // 创建 uploads 文件夹
 const uploadsDir = join(process.cwd(), 'uploads');
@@ -60,19 +62,60 @@ export async function POST(req: NextRequest) {
           throw new Error('Extracted text is too short or empty');
         }
 
-        // 更新数据库 - 标记为完成
+        // 提取摘要（前500字符作为摘要）
+        const abstract = text.substring(0, 500);
+
+        // 调用 Google Scholar 搜索 API
+        let googleScholarUrl = null;
+        try {
+          console.log(`[GoogleScholar] Searching for paper: ${title}`);
+          const scholarResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/google-scholar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, abstract }),
+          });
+
+          if (scholarResponse.ok) {
+            const scholarData = await scholarResponse.json();
+            googleScholarUrl = scholarData.searchUrl;
+            console.log(`[GoogleScholar] ✅ Found: ${googleScholarUrl}`);
+          } else {
+            console.log(`[GoogleScholar] ⚠️ Search failed with status: ${scholarResponse.status}`);
+          }
+        } catch (scholarError) {
+          console.error(`[GoogleScholar] ❌ Error:`, scholarError);
+        }
+
+        // 更新数据库 - 标记为完成，包含 Google Scholar 链接和摘要
         await dbPapers.update(papers)
           .set({
             extractedText: text,
             isComplete: true,
+            abstract,
+            googleScholarUrl,
             updatedAt: sql`CURRENT_TIMESTAMP`,
           })
           .where(eq(papers.id, paperId));
 
         console.log(`[AsyncParse] ✅ Complete for ID=${paperId}:`);
+
+        // Chunk the extracted text
+        try {
+          console.log(`[Chunking] Starting chunking for paper ID=${paperId}`);
+          const sections = detectSections(text);
+          const storedCount = await storeChunks(paperId, sections);
+          console.log(`[Chunking] ✅ Stored ${storedCount} chunks for paper ID=${paperId}`);
+        } catch (chunkError) {
+          console.error(`[Chunking] ❌ Failed for paper ID=${paperId}:`, chunkError);
+          // Don't fail the upload process if chunking fails
+        }
+
         console.log(`  - Pages: ${numPages}`);
         console.log(`  - Characters: ${text.length}`);
         console.log(`  - Method: ${method}`);
+        if (googleScholarUrl) {
+          console.log(`  - Google Scholar: ${googleScholarUrl}`);
+        }
       } catch (err) {
         console.error(`[AsyncParse] ❌ Failed for ID=${paperId}:`, err);
 
