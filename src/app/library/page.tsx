@@ -63,6 +63,8 @@ function LibraryContent() {
   const [isRemovingFromCategory, setIsRemovingFromCategory] = useState(false);
   const [isMovingToOtherCategory, setIsMovingToOtherCategory] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const { data, isLoading, error: fetchError } = useLibrary({
     search: search || undefined,
@@ -601,14 +603,14 @@ function LibraryContent() {
     );
   }
 
-  if (error) {
+  if (fetchError) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto">
           <Card className="border-destructive">
             <CardContent className="py-8 text-center">
               <p className="text-destructive font-medium mb-2">加载失败</p>
-              <p className="text-muted-foreground text-sm">{error}</p>
+              <p className="text-muted-foreground text-sm">{fetchError.message || fetchError}</p>
               <p className="text-muted-foreground text-xs mt-4">
                 请确保已登录并重试
               </p>

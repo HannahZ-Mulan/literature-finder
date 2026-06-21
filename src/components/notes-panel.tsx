@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, StickyNote, Plus, Trash2, Edit, Save, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Note {
   id: number;
@@ -20,8 +21,10 @@ interface NotesPanelProps {
 }
 
 export function NotesPanel({ literatureId }: NotesPanelProps) {
+  const { toast } = useToast();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [noteContent, setNoteContent] = useState('');
@@ -51,8 +54,13 @@ export function NotesPanel({ literatureId }: NotesPanelProps) {
   const handleCreateNote = async () => {
     if (!noteContent.trim()) return;
 
+    setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
       const res = await fetch(`/api/literature/${literatureId}/notes`, {
         method: 'POST',
         headers: {
@@ -65,23 +73,38 @@ export function NotesPanel({ literatureId }: NotesPanelProps) {
         }),
       });
 
+      console.log('creating note...', {
+        literatureId,
+        token: token?.slice?.(0, 10)
+      });
+      console.log('response status:', res.status);
+
       if (res.ok) {
         const data = await res.json();
-        setNotes([data.note, ...notes]);
+        setNotes(prev => [data.note, ...prev]);
         setNoteContent('');
         setQuoteText('');
         setIsEditing(false);
+      } else {
+        console.error('Save failed:', res.status);
       }
     } catch (err) {
       console.error('Failed to create note:', err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleUpdateNote = async () => {
     if (!editingNote || !noteContent.trim()) return;
 
+    setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
       const res = await fetch(`/api/literature/${literatureId}/notes/${editingNote.id}`, {
         method: 'PUT',
         headers: {
@@ -91,27 +114,49 @@ export function NotesPanel({ literatureId }: NotesPanelProps) {
         body: JSON.stringify({ content: noteContent }),
       });
 
+      console.log('updating note...', {
+        literatureId,
+        noteId: editingNote.id,
+        token: token?.slice?.(0, 10)
+      });
+      console.log('response status:', res.status);
+
       if (res.ok) {
         const data = await res.json();
-        setNotes(notes.map((n) => (n.id === editingNote.id ? data.note : n)));
+        setNotes(prev => prev.map((n) => (n.id === editingNote.id ? data.note : n)));
         setEditingNote(null);
         setNoteContent('');
+      } else {
+        console.error('Update failed:', res.status);
       }
     } catch (err) {
       console.error('Failed to update note:', err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteNote = async (id: number) => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
       const res = await fetch(`/api/literature/${literatureId}/notes/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log('deleting note...', {
+        literatureId,
+        noteId: id,
+        token: token?.slice?.(0, 10)
+      });
+      console.log('response status:', res.status);
+
       if (res.ok) {
-        setNotes(notes.filter((n) => n.id !== id));
+        setNotes(prev => prev.filter((n) => n.id !== id));
       }
     } catch (err) {
       console.error('Failed to delete note:', err);
@@ -189,10 +234,19 @@ export function NotesPanel({ literatureId }: NotesPanelProps) {
               <Button
                 size="sm"
                 onClick={editingNote ? handleUpdateNote : handleCreateNote}
-                disabled={!noteContent.trim()}
+                disabled={!noteContent.trim() || isSaving}
               >
-                <Save className="w-4 h-4 mr-1" />
-                保存
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    保存中...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-1" />
+                    保存
+                  </>
+                )}
               </Button>
               <Button
                 size="sm"
@@ -206,6 +260,7 @@ export function NotesPanel({ literatureId }: NotesPanelProps) {
                     setQuoteText('');
                   }
                 }}
+                disabled={isSaving}
               >
                 取消
               </Button>

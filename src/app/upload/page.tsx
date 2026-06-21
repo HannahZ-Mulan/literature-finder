@@ -13,7 +13,9 @@ import {
   FileIcon,
   CheckCircle2,
   AlertCircle,
-  FileText as FileTextIcon
+  FileText as FileTextIcon,
+  FolderOpen,
+  ArrowRight
 } from 'lucide-react';
 
 interface Paper {
@@ -164,10 +166,22 @@ export default function UploadPage() {
     <div className="container mx-auto px-4 py-16 max-w-4xl">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-6 h-6" />
-            Upload Research Paper
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-6 h-6" />
+              Upload Research Paper
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/my-papers')}
+              className="gap-2"
+            >
+              <FolderOpen className="w-4 h-4" />
+              我的论文
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>

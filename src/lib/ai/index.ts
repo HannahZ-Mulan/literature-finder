@@ -475,12 +475,52 @@ export class AIProviderManager {
   async generateQuickPreview(
     title: string,
     abstract: string
-  ): Promise<AISummaryResponse> {
+  ): Promise<AISummaryResponse & { english: string; chinese: string }> {
     console.log(`[AI] Generating quick preview with provider: ${this.preferredProvider}`);
 
-    // 重用 generateSummary，使用 short 长度级别
-    const result = await this.generateSummary(title, abstract, 'short');
-    return result;
+    // 直接生成中英文对照版本
+    const prompt = `You are generating a bilingual (English and Chinese) summary of a research paper.
+
+Paper Title: ${title}
+Paper Abstract: ${abstract}
+
+Please provide a concise summary that includes:
+1. Research question/objective
+2. Method/approach
+3. Key findings
+4. Main contributions
+
+Format your response as follows:
+
+=== ENGLISH SUMMARY ===
+[3-5 sentences in English]
+
+=== 中文摘要 ===
+[3-5句中文]
+
+Keep each part concise and clear.`;
+
+    const result = await this.generateSummaryWithProvider(
+      this.preferredProvider,
+      title,
+      prompt,
+      'detailed'
+    );
+
+    // 解析中英文部分
+    const englishMatch = result.content.match(/=== ENGLISH SUMMARY ===\n([\s\S]*?)\n=== 中文摘要 ===/);
+    const chineseMatch = result.content.match(/=== 中文摘要 ===\n([\s\S]*)/);
+
+    const english = englishMatch ? englishMatch[1].trim() : result.content;
+    const chinese = chineseMatch ? chineseMatch[1].trim() : '';
+
+    return {
+      content: result.content,
+      english: english || result.content,
+      chinese: chinese || '暂无中文摘要',
+      usage: result.usage,
+      provider: result.provider,
+    } as AISummaryResponse & { english: string; chinese: string };
   }
 
   /**

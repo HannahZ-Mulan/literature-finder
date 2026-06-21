@@ -189,14 +189,14 @@ export function LiteratureCard({ literature, selected = false, onToggle, onUpdat
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking on buttons or checkbox
-    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('[data-radix-collection-item]')) {
+    // Don't navigate if clicking on buttons, checkbox, or interactive elements
+    if ((e.target as HTMLElement).closest('button') ||
+        (e.target as HTMLElement).closest('[data-radix-collection-item]') ||
+        (e.target as HTMLElement).closest('input[type="checkbox"]')) {
       return;
     }
-    // Toggle selection when clicking the card
-    if (onToggle) {
-      onToggle(literature.id);
-    }
+    // Navigate to detail page
+    router.push(`/literature/${literature.id}`);
   };
 
   const handleDragStart = (e: React.DragEvent) => {

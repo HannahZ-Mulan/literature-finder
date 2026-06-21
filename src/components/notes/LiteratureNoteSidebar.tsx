@@ -102,9 +102,17 @@ export function LiteratureNoteSidebar({
 
     setSaving(true);
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
       const response = await fetch(`/api/literature/${literatureId}/notes`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           content: newNote,
           quote: null,
@@ -112,34 +120,25 @@ export function LiteratureNoteSidebar({
         }),
       });
 
+      console.log('saving note...', {
+        literatureId,
+        token: token?.slice?.(0, 10)
+      });
+      console.log('response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
         if (isMounted.current) {
-          setNotes([data.note, ...notes]);
+          setNotes(prev => [data.note, ...prev]);
           setNewNote('');
-          toast({
-            title: "笔记已保存",
-            description: "你的笔记已成功保存",
-          });
+          // 简化反馈 - 不使用toast
+          console.log('Note saved successfully');
         }
       } else {
-        if (isMounted.current) {
-          const error = await response.json();
-          toast({
-            title: "保存失败",
-            description: error.error || "请稍后重试",
-            variant: "destructive",
-          });
-        }
+        console.error('Save failed:', response.status);
       }
     } catch (error) {
-      if (isMounted.current) {
-        toast({
-          title: "保存失败",
-          description: "请稍后重试",
-          variant: "destructive",
-        });
-      }
+      console.error('Failed to save note:', error);
     } finally {
       if (isMounted.current) {
         setSaving(false);
@@ -151,72 +150,72 @@ export function LiteratureNoteSidebar({
     if (!editContent.trim()) return;
 
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
       const response = await fetch(`/api/literature/${literatureId}/notes/${noteId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ content: editContent }),
       });
 
+      console.log('updating note...', {
+        literatureId,
+        noteId,
+        token: token?.slice?.(0, 10)
+      });
+      console.log('response status:', response.status);
+
       if (response.ok && isMounted.current) {
         const data = await response.json();
-        setNotes(notes.map(n => n.id === noteId ? { ...n, content: data.note.content } : n));
+        setNotes(prev => prev.map(n => n.id === noteId ? { ...n, content: data.note.content } : n));
         setEditingId(null);
         setEditContent('');
-        toast({
-          title: "笔记已更新",
-          description: "笔记更新成功",
-        });
+        console.log('Note updated successfully');
       } else if (!isMounted.current) {
         return;
       } else {
-        const error = await response.json();
-        toast({
-          title: "更新失败",
-          description: error.error || "请稍后重试",
-          variant: "destructive",
-        });
+        console.error('Update failed:', response.status);
       }
     } catch (error) {
-      if (isMounted.current) {
-        toast({
-          title: "更新失败",
-          description: "请稍后重试",
-          variant: "destructive",
-        });
-      }
+      console.error('Failed to update note:', error);
     }
   }
 
   async function handleDeleteNote(noteId: number) {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
       const response = await fetch(`/api/literature/${literatureId}/notes/${noteId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
+      console.log('deleting note...', {
+        literatureId,
+        noteId,
+        token: token?.slice?.(0, 10)
+      });
+      console.log('response status:', response.status);
+
       if (response.ok && isMounted.current) {
-        setNotes(notes.filter(n => n.id !== noteId));
-        toast({
-          title: "笔记已删除",
-          description: "笔记删除成功",
-        });
-      } else if (!isMounted.current) {
-        return;
+        setNotes(prev => prev.filter(n => n.id !== noteId));
+        console.log('Note deleted successfully');
       } else {
-        const error = await response.json();
-        toast({
-          title: "删除失败",
-          description: error.error || "请稍后重试",
-          variant: "destructive",
-        });
+        console.error('Delete failed:', response.status);
       }
     } catch (error) {
-      if (isMounted.current) {
-        toast({
-          title: "删除失败",
-          description: "请稍后重试",
-          variant: "destructive",
-        });
-      }
+      console.error('Failed to delete note:', error);
     }
   }
 

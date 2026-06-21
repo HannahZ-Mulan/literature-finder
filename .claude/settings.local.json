@@ -47,7 +47,11 @@
       "Bash(head:*)",
       "Bash(hexdump:*)",
       "Bash(od:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(timeout 5 cmd /c \"echo Waiting...\")",
+      "Bash(set DATABASE_URL=file:./sqlite.db)",
+      "Bash(npx drizzle-kit push:*)",
+      "Bash(npx tsx:*)"
     ]
   }
 }
