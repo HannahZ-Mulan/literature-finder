@@ -6,8 +6,9 @@ import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, ArrowLeft, Check, ExternalLink, FileText, Folder, BookOpen, Wand, ChevronDown, Save, Download, Search, MessageSquare, Sparkles, StickyNote } from 'lucide-react';
+import { Loader2, ArrowLeft, Check, ExternalLink, FileText, Folder, BookOpen, Wand, ChevronDown, Save, Download, Search, MessageSquare, Sparkles, StickyNote, Plus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,10 +84,20 @@ export default function LiteratureDetailPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Notes state
+  const [notes, setNotes] = useState<Array<{
+    id: number;
+    content: string;
+    quote: string | null;
+    page_number: number | null;
+    created_at: string;
+  }>>([]);
+
   useEffect(() => {
     if (id) {
       fetchLiterature();
       checkIfSaved();
+      fetchNotes();
     }
   }, [id]);
 
@@ -100,6 +111,18 @@ export default function LiteratureDetailPage() {
       }
     } catch {
       setIsSaved(false);
+    }
+  };
+
+  const fetchNotes = async () => {
+    try {
+      const response = await fetch(`/api/literature/${id}/notes`);
+      if (response.ok) {
+        const data = await response.json();
+        setNotes(data.notes || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notes:', error);
     }
   };
 
@@ -1110,23 +1133,65 @@ export default function LiteratureDetailPage() {
           <TabsContent value="notes" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <StickyNote className="w-5 h-5" />
-                  文献笔记
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <StickyNote className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm mb-3">点击右下角的笔记按钮打开笔记面板</p>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <StickyNote className="w-5 h-5" />
+                    文献笔记
+                  </CardTitle>
                   <Button
                     onClick={() => setSidebarOpen(true)}
                     variant="outline"
                     size="sm"
                   >
-                    <StickyNote className="w-4 h-4 mr-2" />
-                    打开笔记面板
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    打开侧边栏模式
                   </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Notes List */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium">所有笔记</h3>
+                    <span className="text-sm text-muted-foreground">
+                      共 {notes?.length || 0} 条笔记
+                    </span>
+                  </div>
+
+                  {notes && notes.length > 0 ? (
+                    <div className="space-y-3">
+                      {notes.map((note) => (
+                        <Card key={note.id} className="p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                {new Date(note.created_at).toLocaleString('zh-CN')}
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground border rounded-lg border-dashed">
+                      <StickyNote className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p className="text-sm mb-4">还没有笔记，开始记录你的想法吧！</p>
+                      <Button
+                        onClick={() => setSidebarOpen(true)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        添加第一条笔记
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Helper Text */}
+                <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                  💡 提示：点击"打开侧边栏模式"可以在阅读文献的同时添加和编辑笔记
                 </div>
               </CardContent>
             </Card>
