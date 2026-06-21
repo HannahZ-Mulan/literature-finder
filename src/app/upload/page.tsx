@@ -163,177 +163,240 @@ export default function UploadPage() {
   }, [router, isParsing]);
 
   return (
-    <div className="container mx-auto px-4 py-16 max-w-4xl">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-6 h-6" />
-              Upload Research Paper
-            </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push('/my-papers')}
-              className="gap-2"
-            >
-              <FolderOpen className="w-4 h-4" />
-              我的论文
-              <ArrowRight className="w-4 h-4" />
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
+            <Upload className="w-8 h-8 text-white" />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <h3 className="text-lg font-medium mb-2">Upload Paper or Paste Text</h3>
-            <p className="text-sm text-muted-foreground">
-              Upload a PDF file or paste the text directly for AI analysis.
-            </p>
-          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
+            上传研究论文
+          </h1>
+          <p className="text-muted-foreground max-w-lg mx-auto">
+            上传PDF或粘贴文本，AI将自动提取和分析论文内容
+          </p>
+        </div>
 
-          {/* Toggle buttons */}
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant={!useManualText ? 'default' : 'outline'}
-              onClick={() => setUseManualText(false)}
-              size="sm"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Upload PDF
-            </Button>
-            <Button
-              type="button"
-              variant={useManualText ? 'default' : 'outline'}
-              onClick={() => setUseManualText(true)}
-              size="sm"
-            >
-              <FileIcon className="w-4 h-4 mr-2" />
-              Paste Text
-            </Button>
-          </div>
+        <Card className="border-0 shadow-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+          <CardHeader className="border-b pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                上传论文
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/my-papers')}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <FolderOpen className="w-4 h-4" />
+                我的论文
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardHeader>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Paper Title (Optional)</label>
+          <CardContent className="pt-6 space-y-8">
+            {/* Upload Method Toggle */}
+            <div className="flex justify-center">
+              <div className="inline-flex rounded-lg border p-1 bg-muted/50">
+                <Button
+                  type="button"
+                  variant={!useManualText ? 'default' : 'ghost'}
+                  onClick={() => setUseManualText(false)}
+                  size="sm"
+                  className="rounded-md"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  PDF上传
+                </Button>
+                <Button
+                  type="button"
+                  variant={useManualText ? 'default' : 'ghost'}
+                  onClick={() => setUseManualText(true)}
+                  size="sm"
+                  className="rounded-md"
+                >
+                  <FileIcon className="w-4 h-4 mr-2" />
+                  文本粘贴
+                </Button>
+              </div>
+            </div>
+
+            {/* Title Input */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">论文标题 <span className="text-muted-foreground">（可选）</span></label>
               <Input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Will use filename if empty"
+                placeholder="留空则使用文件名"
                 disabled={isUploading || isParsing}
+                className="h-12"
               />
             </div>
 
+            {/* File or Text Input */}
             {!useManualText ? (
-              <div>
-                <label className="block text-sm font-medium mb-2">PDF File</label>
-                <div className="flex items-center gap-3">
-                  <Input
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">PDF文件</label>
+                <div
+                  className="border-2 border-dashed rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
+                  onClick={() => document.querySelector('input[type="file"]')?.click()}
+                >
+                  <input
                     type="file"
                     accept=".pdf"
                     onChange={handleFileChange}
                     disabled={isUploading || isParsing}
-                    className="flex-1"
+                    className="hidden"
                   />
-                  {file && (
-                    <span className="text-sm text-muted-foreground">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </span>
+                  {!file ? (
+                    <div className="space-y-3">
+                      <div className="w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                        <Upload className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium">点击上传PDF文件</p>
+                        <p className="text-sm text-muted-foreground">或拖拽文件到此处</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-8 h-8 text-blue-600" />
+                        <div>
+                          <p className="font-medium">{file.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFile(null);
+                        }}
+                      >
+                        移除
+                      </Button>
+                    </div>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  PDF text extraction happens automatically after upload
+                <p className="text-xs text-muted-foreground text-center">
+                  💡 系统将自动提取PDF中的文本内容
                 </p>
               </div>
             ) : (
-              <div>
-                <label className="block text-sm font-medium mb-2">Paper Text</label>
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">论文文本</label>
                 <Textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="Paste your research paper text here..."
-                  className="min-h-[300px] font-mono text-sm"
+                  placeholder="在此粘贴论文全文..."
+                  className="min-h-[250px] font-mono text-sm resize-none"
                   disabled={isUploading || isParsing}
                 />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Paste the full text of your paper here for AI analysis.
+                <p className="text-xs text-muted-foreground">
+                  💡 粘贴完整的论文文本以获得最佳AI分析效果
                 </p>
               </div>
             )}
 
+            {/* Error Message */}
             {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-red-800 dark:text-red-200">上传失败</p>
+                  <p className="text-sm text-red-600 dark:text-red-300 mt-1">{error}</p>
                 </div>
               </div>
             )}
 
-            {/* 上传进度条 */}
+            {/* Upload Progress */}
             {isUploading && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Uploading...</span>
-                  <span>{uploadProgress}%</span>
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                    <span className="font-medium text-blue-900 dark:text-blue-100">正在上传...</span>
+                  </div>
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    {uploadProgress}%
+                  </span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 overflow-hidden">
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             )}
 
-            {/* 解析进度 */}
+            {/* Parsing Progress */}
             {isParsing && (
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <p className="text-sm text-blue-700 dark:text-blue-300">{status}</p>
+              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                  <div className="flex-1">
+                    <p className="font-medium text-purple-900 dark:text-purple-100">正在提取文本...</p>
+                    {status && <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">{status}</p>}
+                  </div>
                 </div>
               </div>
             )}
 
+            {/* Success Message */}
             {!isParsing && !isUploading && status && (
-              <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  <p className="text-sm text-green-700 dark:text-green-300">{status}</p>
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium text-green-900 dark:text-green-100 text-green-700 dark:text-green-300">{status}</p>
                 </div>
               </div>
             )}
 
+            {/* Upload Button */}
             <Button
               onClick={handleUpload}
-              disabled={(!file && !text) || isUploading}
-              className="w-full"
+              disabled={(!file && !text) || isUploading || isParsing}
+              className="w-full h-14 text-lg font-medium bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
               size="lg"
             >
               {isUploading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Uploading...
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  上传中...
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Paper
+                  <Upload className="w-5 h-5 mr-2" />
+                  开始上传
                 </>
               )}
             </Button>
-          </div>
 
-          <div className="border-t pt-4">
-            <p className="text-xs text-muted-foreground">
-              <strong>Note:</strong> PDF text extraction uses pdf-parse library. For best results,
-              use text-based PDFs rather than scanned documents.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+            {/* Help Text */}
+            <div className="pt-4 border-t">
+              <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg">
+                <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                <div className="text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground mb-1">支持的格式</p>
+                  <p>• PDF文件（推荐）- 系统会自动提取文本内容</p>
+                  <p>• 纯文本 - 直接粘贴论文全文</p>
+                  <p className="mt-2 text-xs">⚠️ 扫描的PDF可能无法正确提取文本</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
