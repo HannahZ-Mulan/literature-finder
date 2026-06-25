@@ -4,6 +4,8 @@ import { papers } from '@/db/index-papers';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getAIManager } from '@/lib/ai';
+import { retrieveRelevantChunks } from '@/lib/search/chunk-retriever';
+import { getChunksByPaperId } from '@/lib/chunker/chunk-storage';
 
 const chatSchema = z.object({
   question: z.string().min(1),
@@ -72,20 +74,51 @@ export async function POST(
       });
     }
 
-    // Smart context extraction: beginning + ending for better coverage
-    const getSmartContext = (fullText: string, maxLength: number = 12000) => {
-      if (fullText.length <= maxLength) {
-        return fullText;
+    // Build context for the AI. Prefer RAG (retrieve the most relevant
+    // chunks for this question) over stuffing the whole text; fall back
+    // gracefully so there is always something to answer from.
+    const buildContext = async (): Promise<{ context: string; usedRAG: boolean }> => {
+      // 1) RAG: retrieve top-K chunks by keyword relevance
+      const retrieved = await retrieveRelevantChunks(question, paperId, 5);
+      if (retrieved.length > 0) {
+        return {
+          context: retrieved
+            .map(c => `[来源: ${c.chunkType}]\n${c.chunkText}`)
+            .join('\n\n'),
+          usedRAG: true
+        };
       }
 
-      // Extract beginning (70%) + ending (30%)
+      // 2) Fallback A: no keyword matches, but chunks exist -> use the
+      //    opening sections (Abstract / Introduction) which usually cover
+      //    overview-style questions
+      const allChunks = await getChunksByPaperId(paperId);
+      if (allChunks.length > 0) {
+        const head = allChunks.slice(0, 2);
+        return {
+          context: head
+            .map(c => `[来源: ${c.chunk_type}]\n${c.chunk_text}`)
+            .join('\n\n'),
+          usedRAG: false
+        };
+      }
+
+      // 3) Fallback B: paper has no chunks at all -> truncate full text
+      //    (legacy behavior, kept as last resort)
+      const fullText = paper.extractedText;
+      const maxLength = 12000;
+      if (fullText.length <= maxLength) {
+        return { context: fullText, usedRAG: false };
+      }
       const beginning = fullText.substring(0, Math.floor(maxLength * 0.7));
       const ending = fullText.substring(fullText.length - Math.floor(maxLength * 0.3));
-
-      return beginning + '\n\n...[论文中间部分省略]...\n\n' + ending;
+      return {
+        context: beginning + '\n\n...[论文中间部分省略]...\n\n' + ending,
+        usedRAG: false
+      };
     };
 
-    const paperContext = getSmartContext(paper.extractedText);
+    const { context: paperContext, usedRAG } = await buildContext();
 
     // Try to use AI Manager for intelligent responses
     try {
@@ -101,6 +134,7 @@ export async function POST(
         answer: result.content,
         provider: result.provider,
         usage: result.usage,
+        rag: usedRAG,
       });
     } catch (aiError) {
       // If AI fails, provide an intelligent fallback response based on the paper content
