@@ -38,3 +38,9 @@ sqlite.db
 sqlite.db-shm
 sqlite.db-wal
 /drizzle
+
+# user-uploaded files (PDFs etc.) - runtime data, not source
+/uploads
+
+# local agent settings (per-machine)
+.claude/settings.local.json
