@@ -19,8 +19,18 @@ export interface GLMResponse {
 }
 
 /**
- * GLM API Client for generating literature summaries
- * This is a placeholder implementation that can be replaced with actual Zhipu GLM API calls
+ * GLM API Client for generating literature summaries via Zhipu GLM-4.
+ *
+ * This is a REAL implementation: generateSummary() calls the live
+ * Zhipu API at open.bigmodel.cn when ZHIPU_API_KEY is set. It only falls
+ * back to generateMockSummary() when the key is missing or the API call
+ * errors out.
+ *
+ * NOTE on routing: this client handles summary generation only. Chat and
+ * translation go through the AI Manager (src/lib/ai), whose chatWithPaper()
+ * provider list is ['openai', 'deepseek'] and does NOT include zhipu.
+ * So AI_PROVIDER=zhipu does not affect chat/translate today even though
+ * they share the same env var - they will silently use deepseek instead.
  */
 export class GLMClient {
   private apiKey: string;
@@ -49,8 +59,9 @@ export class GLMClient {
   }
 
   /**
-   * Generate summary using GLM API
-   * This is a mock implementation that should be replaced with actual API calls
+   * Generate summary using the Zhipu GLM-4 API.
+   * Returns mock content only when the API key is missing or the request
+   * fails (see generateMockSummary).
    */
   async generateSummary(
     title: string,

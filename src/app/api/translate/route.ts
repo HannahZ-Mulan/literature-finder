@@ -55,16 +55,18 @@ Provide only the translation, no explanations.`;
         provider: result.provider,
       });
     } catch (aiError) {
-      // Fallback to simple translation if AI fails
-      console.warn('[Translate] AI provider failed, using fallback:', aiError);
-
-      // Simple fallback: return original text with note
+      // AI translation failed. Return a degraded marker so the UI can show
+      // an honest "translation unavailable" message instead of passing off
+      // the original text as a translation.
+      console.warn('[Translate] AI provider failed:', aiError);
       return NextResponse.json({
-        translation: `[翻译服务暂时不可用]\n\n原文：\n${text}`,
+        translation: '',
         original_text: text,
         provider: 'fallback',
+        degraded: true,
+        message: '翻译服务暂时不可用，请稍后重试。',
         error: 'Translation service unavailable',
-      });
+      }, { status: 503 });
     }
   } catch (error) {
     console.error('Translation error:', error);

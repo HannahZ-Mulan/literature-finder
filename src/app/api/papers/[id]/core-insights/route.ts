@@ -82,11 +82,14 @@ export async function POST(
       cached: false,
     });
   } catch (error) {
+    // AI generation failed. Surface this honestly to the user instead of
+    // returning fabricated content that looks like a real analysis.
     console.error('Generate core insights error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate core insights' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'Failed to generate core insights',
+      degraded: true,
+      message: 'AI 核心解读生成失败，请稍后重试。以下内容不可用。',
+    }, { status: 503 });
   }
 }
 
@@ -195,7 +198,7 @@ Return ONLY the JSON object, no additional text.`;
     }
 
     // Validate required fields
-    const requiredFields = [
+    const requiredFields: Array<keyof CoreInsights> = [
       'one_sentence_summary', 'research_question', 'methods',
       'key_findings', 'contributions', 'limitations',
       'applications', 'quality_assessment'
@@ -217,40 +220,10 @@ Return ONLY the JSON object, no additional text.`;
 
     return insights;
   } catch (error) {
-    console.error('[Core Insights] Generation error:', error);
-
-    // Return mock data on error - ensure UI never shows blank
-    return {
-      one_sentence_summary: "论文研究了一个重要主题，但需要查看完整内容获取细节。",
-      one_sentence_summary_location: "需要查看完整论文",
-      research_question: "该研究试图探讨核心科学问题的答案。",
-      research_question_location: "需要查看完整论文",
-      methods: "采用定量研究方法，通过数据分析验证假设。",
-      methods_location: "需要查看完整论文",
-      key_findings: [
-        { finding: "研究方法严谨，样本量充足", location: "需要查看完整论文" },
-        { finding: "结论有数据支撑", location: "需要查看完整论文" },
-        { finding: "对相关领域有参考价值", location: "需要查看完整论文" }
-      ],
-      contributions: [
-        { contribution: "提供了新的理论视角", location: "需要查看完整论文" },
-        { contribution: "为后续研究奠定基础", location: "需要查看完整论文" }
-      ],
-      limitations: [
-        { limitation: "样本范围有限", location: "需要查看完整论文" },
-        { limitation: "研究周期较短", location: "需要查看完整论文" }
-      ],
-      applications: {
-        researcher: "可作为相关研究的参考文献。",
-        clinician: "为实践提供理论依据。",
-        policy_maker: "为政策制定提供数据支持。"
-      },
-      quality_assessment: {
-        level: 'medium',
-        reason: "这是一篇经过同行评审的学术论文，具有基本的科学可靠性。",
-        location: "需要查看完整论文"
-      },
-      text_coverage: "需要查看完整论文以获取详细信息"
-    };
+    // Do NOT swallow the error with fake "mock" data - that would present
+    // fabricated conclusions to the user as if they were real analysis.
+    // Let the caller decide how to surface the failure.
+    console.error('[Core Insights] Generation failed:', error);
+    throw error;
   }
 }

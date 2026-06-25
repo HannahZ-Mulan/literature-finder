@@ -137,46 +137,16 @@ export async function POST(
         rag: usedRAG,
       });
     } catch (aiError) {
-      // If AI fails, provide an intelligent fallback response based on the paper content
-      console.warn('[Chat] AI provider failed, using intelligent fallback:', aiError);
-
-      // Generate a more intelligent fallback based on actual paper content
-      const wordCount = paper.extractedText.split(/\s+/).length;
-      const paragraphCount = paper.extractedText.split(/\n\n+/).length;
-
-      const intelligentFallback = `感谢您关于《${paper.title}》的提问。
-
-**当前状态说明：**
-这是一篇上传的论文（约${wordCount}字，${paragraphCount}个段落）。AI深度分析功能暂时不可用，但我可以基于论文内容提供一些基本信息。
-
-**论文基本信息：**
-- 标题：${paper.title}
-- 文件名：${paper.fileName}
-- 内容长度：${wordCount}字
-
-**建议您：**
-1. 阅读论文全文以获取准确信息
-2. 如果论文包含摘要、引言和结论，AI摘要功能可能对您有帮助
-3. 配置真实的AI API密钥（OpenAI或DeepSeek）以获得智能对话功能
-
-**如果需要配置AI功能：**
-请在环境变量中设置以下任一API密钥：
-- OPENAI_API_KEY（推荐，功能最强大）
-- DEEPSEEK_API_KEY（性价比高）
-
-配置后，您可以：
-- 提出关于论文研究问题、方法、结果的深度问题
-- 请求解释论文中的概念和术语
-- 讨论论文的贡献和局限性
-- 获取论文与其他工作的比较分析
-
-抱歉当前无法提供更详细的回答，请配置AI密钥后重试。`;
-
+      // AI provider unavailable. Return an honest degraded response rather
+      // than a long fabricated "answer" that buries the failure.
+      console.warn('[Chat] AI provider failed:', aiError);
       return NextResponse.json({
-        answer: intelligentFallback,
+        answer: '⚠️ AI 对话服务暂时不可用，无法回答您的问题。请稍后重试，或检查 AI 服务配置。',
         provider: 'fallback',
+        rag: usedRAG,
+        degraded: true,
         error: 'AI provider not available - please configure API keys',
-      });
+      }, { status: 503 });
     }
   } catch (error) {
     console.error('Chat error:', error);

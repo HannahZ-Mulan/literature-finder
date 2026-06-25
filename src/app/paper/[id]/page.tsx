@@ -254,7 +254,17 @@ export default function PaperReaderPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate core insights');
+        // Distinguish a true failure (degraded) from a validation error
+        if (data.degraded) {
+          toast({
+            variant: "destructive",
+            title: "AI 核心解读生成失败",
+            description: data.message || 'AI 服务暂时不可用，请稍后重试',
+          });
+        } else {
+          throw new Error(data.error || 'Failed to generate core insights');
+        }
+        return;
       }
 
       setCoreInsights(data.insights);
@@ -374,7 +384,19 @@ export default function PaperReaderPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Translation failed');
+        if (data.degraded) {
+          // Translation service unavailable - show honest message, don't
+          // display the original text as if it were a translation.
+          setTranslation('');
+          toast({
+            variant: "destructive",
+            title: "翻译失败",
+            description: data.message || '翻译服务暂时不可用，请稍后重试',
+          });
+        } else {
+          throw new Error(data.error || 'Translation failed');
+        }
+        return;
       }
 
       setTranslation(data.translation);
