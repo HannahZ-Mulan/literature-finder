@@ -9,11 +9,23 @@ import { eq } from 'drizzle-orm';
 
 interface CoreInsights {
   one_sentence_summary: string;
+  one_sentence_summary_location: string; // 添加：一句话总结的引用位置
   research_question: string;
+  research_question_location: string; // 添加：研究问题的引用位置
   methods: string;
-  key_findings: string[];
-  contributions: string[];
-  limitations: string[];
+  methods_location: string; // 添加：研究方法的引用位置
+  key_findings: Array<{
+    finding: string; // 发现内容
+    location: string; // 引用位置，例如："第3页第2段" 或 "Introduction部分"
+  }>;
+  contributions: Array<{
+    contribution: string; // 贡献内容
+    location: string; // 引用位置
+  }>;
+  limitations: Array<{
+    limitation: string; // 局限性内容
+    location: string; // 引用位置
+  }>;
   applications: {
     researcher: string;
     clinician: string;
@@ -22,7 +34,9 @@ interface CoreInsights {
   quality_assessment: {
     level: 'high' | 'medium' | 'low';
     reason: string;
+    location: string; // 添加：质量评估的引用位置
   };
+  text_coverage: string; // 添加：说明分析覆盖了论文的哪些部分
 }
 
 // POST - Generate core insights for paper detail page
@@ -99,26 +113,45 @@ async function generateCoreInsights(title: string, content: string): Promise<Cor
 
   const prompt = `You are an academic assistant. Analyze the following paper and return structured JSON.
 
+CRITICAL REQUIREMENTS:
+- 每个结论都必须标注引用位置（location）
+- location格式：说明在论文中的位置，如"Abstract部分"、"Introduction第2段"、"Methods部分"、"Results第3页"、"Discussion部分结尾"、"Conclusion部分"等
+- 必须基于实际论文内容，不能编造
+- 如果某个部分无法在论文中找到明确对应，location标注为"全文综合推断"
+
 Requirements:
 - Be concise and specific
 - No empty fields
 - Use simple, clear academic Chinese language
 - Strictly follow the JSON schema
 - one_sentence_summary: ≤50字
-- key_findings: 2-3条, 每条≤30字
-- contributions: 2-3条, 每条≤30字
-- limitations: 2-3条, 每条≤30字
+- key_findings: 2-3条, 每条≤30字，必须标注location
+- contributions: 2-3条, 每条≤30字，必须标注location
+- limitations: 2-3条, 每条≤30字，必须标注location
 - applications: each field ≤50字
 - quality_assessment.level: only "high", "medium", or "low"
+- text_coverage: 说明分析覆盖了论文的哪些部分（如"Abstract + Introduction + Methods + Results + Discussion"）
 
 JSON schema:
 {
   "one_sentence_summary": "...",
+  "one_sentence_summary_location": "Abstract/Introduction/...",
   "research_question": "...",
+  "research_question_location": "Introduction第X段/...",
   "methods": "...",
-  "key_findings": ["...", "...", "..."],
-  "contributions": ["...", "..."],
-  "limitations": ["...", "..."],
+  "methods_location": "Methods部分/...",
+  "key_findings": [
+    {"finding": "...", "location": "Results第X段/..."},
+    {"finding": "...", "location": "..."}
+  ],
+  "contributions": [
+    {"contribution": "...", "location": "Discussion第X段/..."},
+    {"contribution": "...", "location": "..."}
+  ],
+  "limitations": [
+    {"limitation": "...", "location": "Discussion局限性部分/..."},
+    {"limitation": "...", "location": "..."}
+  ],
   "applications": {
     "researcher": "...",
     "clinician": "...",
@@ -126,8 +159,10 @@ JSON schema:
   },
   "quality_assessment": {
     "level": "...",
-    "reason": "..."
-  }
+    "reason": "...",
+    "location": "Methods/Results部分"
+  },
+  "text_coverage": "分析覆盖了论文的哪些部分"
 }
 
 Paper:
@@ -187,20 +222,23 @@ Return ONLY the JSON object, no additional text.`;
     // Return mock data on error - ensure UI never shows blank
     return {
       one_sentence_summary: "论文研究了一个重要主题，但需要查看完整内容获取细节。",
+      one_sentence_summary_location: "需要查看完整论文",
       research_question: "该研究试图探讨核心科学问题的答案。",
+      research_question_location: "需要查看完整论文",
       methods: "采用定量研究方法，通过数据分析验证假设。",
+      methods_location: "需要查看完整论文",
       key_findings: [
-        "研究方法严谨，样本量充足",
-        "结论有数据支撑",
-        "对相关领域有参考价值"
+        { finding: "研究方法严谨，样本量充足", location: "需要查看完整论文" },
+        { finding: "结论有数据支撑", location: "需要查看完整论文" },
+        { finding: "对相关领域有参考价值", location: "需要查看完整论文" }
       ],
       contributions: [
-        "提供了新的理论视角",
-        "为后续研究奠定基础"
+        { contribution: "提供了新的理论视角", location: "需要查看完整论文" },
+        { contribution: "为后续研究奠定基础", location: "需要查看完整论文" }
       ],
       limitations: [
-        "样本范围有限",
-        "研究周期较短"
+        { limitation: "样本范围有限", location: "需要查看完整论文" },
+        { limitation: "研究周期较短", location: "需要查看完整论文" }
       ],
       applications: {
         researcher: "可作为相关研究的参考文献。",
@@ -209,8 +247,10 @@ Return ONLY the JSON object, no additional text.`;
       },
       quality_assessment: {
         level: 'medium',
-        reason: "这是一篇经过同行评审的学术论文，具有基本的科学可靠性。"
-      }
+        reason: "这是一篇经过同行评审的学术论文，具有基本的科学可靠性。",
+        location: "需要查看完整论文"
+      },
+      text_coverage: "需要查看完整论文以获取详细信息"
     };
   }
 }

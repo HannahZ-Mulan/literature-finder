@@ -5,10 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowLeft, Sparkles, MessageSquare, FileText, Languages, FileOutput, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, MessageSquare, FileText, Languages, FileOutput, CheckCircle2, AlertCircle, ExternalLink, BookOpen, FileText as FileIcon } from 'lucide-react';
 import { formatPDFText } from '@/lib/text-formatter';
 import { cleanMarkdown } from '@/lib/markdown-cleaner';
 import { useToast } from '@/hooks/use-toast';
+import { PDFViewer } from '@/components/pdf-viewer';
 
 interface Paper {
   id: number;
@@ -17,6 +18,7 @@ interface Paper {
   extractedText: string;
   summary?: string;
   createdAt: string;
+  googleScholarUrl?: string;
 }
 
 interface ChineseSummary {
@@ -30,11 +32,23 @@ interface ChineseSummary {
 
 interface CoreInsights {
   one_sentence_summary: string;
+  one_sentence_summary_location: string;
   research_question: string;
+  research_question_location: string;
   methods: string;
-  key_findings: string[];
-  contributions: string[];
-  limitations: string[];
+  methods_location: string;
+  key_findings: Array<{
+    finding: string;
+    location: string;
+  }>;
+  contributions: Array<{
+    contribution: string;
+    location: string;
+  }>;
+  limitations: Array<{
+    limitation: string;
+    location: string;
+  }>;
   applications: {
     researcher: string;
     clinician: string;
@@ -43,7 +57,9 @@ interface CoreInsights {
   quality_assessment: {
     level: 'high' | 'medium' | 'low';
     reason: string;
+    location: string;
   };
+  text_coverage: string;
 }
 
 export default function PaperReaderPage() {
@@ -78,6 +94,9 @@ export default function PaperReaderPage() {
 
   // Full text expansion state
   const [isFullTextExpanded, setIsFullTextExpanded] = useState(false);
+
+  // PDF/Text view mode
+  const [viewMode, setViewMode] = useState<'text' | 'pdf'>('text');
 
   useEffect(() => {
     fetchPaper();
@@ -411,26 +430,38 @@ export default function PaperReaderPage() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           返回上传
         </Button>
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{paper.title}</h1>
-          <Button
-            onClick={handleGeneratePPT}
-            disabled={isGeneratingPPT}
-            variant="outline"
-            className="gap-2"
-          >
-            {isGeneratingPPT ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                生成中...
-              </>
-            ) : (
-              <>
-                <FileOutput className="w-4 h-4" />
-                生成PPT
-              </>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold flex-1">{paper.title}</h1>
+          <div className="flex items-center gap-2">
+            {paper.googleScholarUrl && (
+              <Button
+                onClick={() => window.open(paper.googleScholarUrl, '_blank')}
+                variant="outline"
+                className="gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Google Scholar
+              </Button>
             )}
-          </Button>
+            <Button
+              onClick={handleGeneratePPT}
+              disabled={isGeneratingPPT}
+              variant="outline"
+              className="gap-2"
+            >
+              {isGeneratingPPT ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  生成中...
+                </>
+              ) : (
+                <>
+                  <FileOutput className="w-4 h-4" />
+                  生成PPT
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -442,97 +473,129 @@ export default function PaperReaderPage() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  论文全文
+                  {viewMode === 'pdf' ? <BookOpen className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                  {viewMode === 'pdf' ? 'PDF预览' : '论文全文'}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsFullTextExpanded(!isFullTextExpanded)}
-                  className="text-xs"
-                >
-                  {isFullTextExpanded ? (
-                    <>
-                      <span>收起</span>
-                      <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                      </svg>
-                    </>
-                  ) : (
-                    <>
-                      <span>展开全文</span>
-                      <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </>
-                  )}
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-text select-text transition-all duration-300 ${
-                  isFullTextExpanded ? 'max-h-[70vh] overflow-y-auto' : 'max-h-32 overflow-hidden relative'
-                }`}
-                onMouseUp={() => {
-                  const selection = window.getSelection();
-                  const text = selection?.toString().trim();
-                  if (text && text.length > 10) {
-                    setSelectedText(text);
-                  }
-                }}
-              >
-                {formatPDFText(paper.extractedText.slice(0, 15000))}
-                {paper.extractedText.length > 15000 && '\n\n... (文本过长，已截断)'}
-
-                {!isFullTextExpanded && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 dark:from-gray-900 to-transparent pt-8 pb-2 px-4">
-                    <p className="text-xs text-muted-foreground text-center">点击"展开全文"查看完整内容</p>
-                  </div>
-                )}
-              </div>
-
-              {selectedText && (
-                <Card className="mt-4 border-blue-200 dark:border-blue-800">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Languages className="w-4 h-4 text-blue-600" />
-                      段落翻译
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm">
-                      {selectedText.slice(0, 300)}
-                      {selectedText.length > 300 && '...'}
-                    </div>
-
+                <div className="flex items-center gap-2">
+                  {/* View Mode Toggle */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode(viewMode === 'text' ? 'pdf' : 'text')}
+                    className="text-xs"
+                  >
+                    {viewMode === 'text' ? (
+                      <>
+                        <BookOpen className="w-4 h-4 mr-1" />
+                        PDF预览
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4 mr-1" />
+                        文本模式
+                      </>
+                    )}
+                  </Button>
+                  {viewMode === 'text' && (
                     <Button
-                      onClick={handleTranslate}
-                      disabled={isTranslating}
+                      variant="ghost"
                       size="sm"
-                      className="w-full"
+                      onClick={() => setIsFullTextExpanded(!isFullTextExpanded)}
+                      className="text-xs"
                     >
-                      {isTranslating ? (
+                      {isFullTextExpanded ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          翻译中...
+                          <span>收起</span>
+                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
                         </>
                       ) : (
                         <>
-                          <Languages className="w-4 h-4 mr-2" />
-                          翻译成中文
+                          <span>展开全文</span>
+                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
                         </>
                       )}
                     </Button>
+                  )}
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {viewMode === 'pdf' ? (
+                <PDFViewer url={`/uploads/${paper.fileName}`} title={paper.title} />
+              ) : (
+                <>
+                  <div
+                    className={`prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-text select-text transition-all duration-300 whitespace-pre-wrap break-words ${
+                      isFullTextExpanded ? 'max-h-[70vh] overflow-y-auto' : 'max-h-32 overflow-hidden relative'
+                    }`}
+                    style={{
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                    }}
+                    onMouseUp={() => {
+                      const selection = window.getSelection();
+                      const text = selection?.toString().trim();
+                      if (text && text.length > 10) {
+                        setSelectedText(text);
+                      }
+                    }}
+                  >
+                    {formatPDFText(paper.extractedText)}
 
-                    {translation && (
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <p className="text-sm font-medium mb-2">中文翻译：</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300">{translation}</p>
+                    {!isFullTextExpanded && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 dark:from-gray-900 to-transparent pt-8 pb-2 px-4">
+                        <p className="text-xs text-muted-foreground text-center">点击"展开全文"查看完整内容</p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+
+                  {selectedText && (
+                    <Card className="mt-4 border-blue-200 dark:border-blue-800">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Languages className="w-4 h-4 text-blue-600" />
+                          段落翻译
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm">
+                          {selectedText.slice(0, 300)}
+                          {selectedText.length > 300 && '...'}
+                        </div>
+
+                        <Button
+                          onClick={handleTranslate}
+                          disabled={isTranslating}
+                          size="sm"
+                          className="w-full"
+                        >
+                          {isTranslating ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              翻译中...
+                            </>
+                          ) : (
+                            <>
+                              <Languages className="w-4 h-4 mr-2" />
+                              翻译成中文
+                            </>
+                          )}
+                        </Button>
+
+                        {translation && (
+                          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <p className="text-sm font-medium mb-2">中文翻译：</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">{translation}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -587,6 +650,9 @@ export default function PaperReaderPage() {
                       <p className="text-base font-medium leading-relaxed text-gray-900 dark:text-gray-100">
                         {coreInsights.one_sentence_summary}
                       </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        📍 来源: {coreInsights.one_sentence_summary_location}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -604,6 +670,9 @@ export default function PaperReaderPage() {
                         </h3>
                         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                           {coreInsights.research_question}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          📍 来源: {coreInsights.research_question_location}
                         </p>
                       </div>
                     </div>
@@ -624,6 +693,9 @@ export default function PaperReaderPage() {
                         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                           {coreInsights.methods}
                         </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          📍 来源: {coreInsights.methods_location}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -640,14 +712,19 @@ export default function PaperReaderPage() {
                         核心发现
                       </h3>
                       <div className="space-y-3">
-                        {coreInsights.key_findings.map((finding, idx) => (
+                        {coreInsights.key_findings.map((item, idx) => (
                           <div key={idx} className="flex gap-3">
                             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">
                               {idx + 1}
                             </span>
-                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                              {finding}
-                            </p>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                {item.finding}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                📍 来源: {item.location}
+                              </p>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -667,12 +744,17 @@ export default function PaperReaderPage() {
                           主要贡献
                         </h3>
                         <div className="space-y-2">
-                          {coreInsights.contributions.map((contribution, idx) => (
+                          {coreInsights.contributions.map((item, idx) => (
                             <div key={idx} className="flex gap-2">
                               <span className="flex-shrink-0 text-blue-500">✓</span>
-                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                                {contribution}
-                              </p>
+                              <div className="flex-1">
+                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                  {item.contribution}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  📍 来源: {item.location}
+                                </p>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -693,12 +775,17 @@ export default function PaperReaderPage() {
                           局限性
                         </h3>
                         <div className="space-y-2">
-                          {coreInsights.limitations.map((limitation, idx) => (
+                          {coreInsights.limitations.map((item, idx) => (
                             <div key={idx} className="flex gap-2">
                               <span className="flex-shrink-0 text-orange-500">!</span>
-                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                                {limitation}
-                              </p>
+                              <div className="flex-1">
+                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                  {item.limitation}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  📍 来源: {item.location}
+                                </p>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -732,6 +819,28 @@ export default function PaperReaderPage() {
                         </div>
                         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                           {coreInsights.quality_assessment.reason}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          📍 来源: {coreInsights.quality_assessment.location}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Text Coverage */}
+              {coreInsights.text_coverage && (
+                <Card className="bg-white dark:bg-gray-900 border-blue-200 dark:border-blue-800">
+                  <CardContent className="pt-4">
+                    <div className="flex items-start gap-2">
+                      <span className="text-xl">📄</span>
+                      <div className="flex-1">
+                        <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">
+                          AI分析覆盖范围
+                        </h3>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {coreInsights.text_coverage}
                         </p>
                       </div>
                     </div>
