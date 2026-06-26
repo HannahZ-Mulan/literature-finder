@@ -184,17 +184,27 @@ export default function PaperReaderPage() {
     }
   };
 
-  const handleGenerateSummary = async () => {
+  const handleGenerateSummary = async (force = false) => {
     setIsGeneratingSummary(true);
     try {
-      const response = await fetch(`/api/papers/${id}/summary`, {
+      const url = force ? `/api/papers/${id}/summary?force=1` : `/api/papers/${id}/summary`;
+      const response = await fetch(url, {
         method: 'POST',
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate summary');
+        if (data.degraded) {
+          toast({
+            variant: "destructive",
+            title: "摘要生成失败",
+            description: data.message || 'AI 服务暂时不可用，请稍后重试',
+          });
+        } else {
+          throw new Error(data.error || 'Failed to generate summary');
+        }
+        return;
       }
 
       setChineseSummary(data.summary);
@@ -1095,13 +1105,13 @@ export default function PaperReaderPage() {
                 <CardContent className="pt-6">
                   <div className="space-y-4">
                     <Button
-                      onClick={handleGenerateSummary}
+                      onClick={() => handleGenerateSummary(true)}
                       disabled={isGeneratingSummary}
                       variant="outline"
                       size="sm"
                       className="w-full"
                     >
-                      {isGeneratingSummary ? '生成中...' : '生成结构化摘要'}
+                      {isGeneratingSummary ? '生成中...' : (chineseSummary ? '重新生成摘要' : '生成结构化摘要')}
                     </Button>
                     {chineseSummary && (
                       <div className="space-y-4 mt-4">
