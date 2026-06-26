@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方向 C · 苔绿静谧 Sage Quiet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f5f0;          /* 暖纸白 */
+    --paper-2:#efede5;
+    --ink:#23261f;            /* 深森绿墨 */
+    --ink-2:#5d6353;
+    --sage:#7d9070;           /* 苔绿 */
+    --sage-2:#a7b59a;
+    --sage-deep:#4f6044;
+    --clay:#a87b5e;           /* 陶土点缀 */
+    --line:#e0ddd2;
+    --serif:'Newsreader',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.65;overflow-x:hidden;
+    background-image:radial-gradient(1000px 500px at 90% 5%,#eceadfen 0%,transparent 60%)}
+  .serif{font-family:var(--serif)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+
+  /* ===== Nav — 极简横线 ===== */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);background:rgba(246,245,240,.82);border-bottom:1px solid var(--line)}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:21px;font-weight:500;letter-spacing:-.01em}
+  .brand .leaf{color:var(--sage);font-size:18px}
+  .nav-links{display:flex;gap:28px;align-items:center}
+  .nav-links a{font-size:13.5px;color:var(--ink-2);text-decoration:none;transition:color .3s;position:relative}
+  .nav-links a:hover{color:var(--sage-deep)}
+  .nav-right{font-size:13px;color:var(--ink-2);display:flex;align-items:center;gap:14px}
+  .live{display:inline-flex;align-items:center;gap:7px;font-family:var(--serif);font-style:italic;color:var(--sage)}
+  .live .r{width:6px;height:6px;border-radius:50%;background:var(--sage);animation:breathe 3s infinite}
+  @keyframes breathe{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+
+  /* ===== Hero — 大留白衬线 ===== */
+  header{padding:110px 0 80px;max-width:780px}
+  .kicker{font-family:var(--serif);font-style:italic;color:var(--sage);font-size:17px;margin-bottom:8px}
+  h1{font-family:var(--serif);font-weight:400;font-size:clamp(38px,5.4vw,60px);line-height:1.08;letter-spacing:-.018em}
+  h1 .em{font-style:italic;color:var(--sage-deep)}
+  .hero-sub{font-size:18px;color:var(--ink-2);max-width:560px;margin:26px 0 0}
+  .cta{display:flex;gap:14px;align-items:center;margin-top:38px}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:13px 26px;border-radius:999px;font-size:14.5px;font-weight:500;cursor:pointer;border:none;text-decoration:none;transition:all .35s}
+  .btn-primary{background:var(--sage-deep);color:#f6f5f0}
+  .btn-primary:hover{background:var(--ink);transform:translateY(-2px)}
+  .btn-ghost{color:var(--ink);background:transparent}
+  .btn-ghost:hover{color:var(--sage-deep)}
+  .btn-ghost .ar{transition:transform .3s}
+  .btn-ghost:hover .ar{transform:translateX(4px)}
+
+  /* 分隔细线 */
+  .rule{height:1px;background:var(--line);margin:24px 0;border:none}
+
+  /* ===== AI digest — 安静的手写感 ===== */
+  .digest-wrap{margin:60px 0;position:relative}
+  .digest{padding:40px 44px;border:1px solid var(--line);border-radius:6px;background:#fbfaf5;position:relative;box-shadow:0 1px 0 #fff inset,0 24px 50px -40px #4f604466}
+  .digest .corner{position:absolute;font-family:var(--serif);font-style:italic;color:var(--sage-2);font-size:13px}
+  .digest .c-tl{top:14px;left:18px}
+  .digest .c-br{bottom:14px;right:18px}
+  .d-label{font-family:var(--serif);font-style:italic;color:var(--clay);font-size:15px;margin-bottom:14px}
+  .d-body{font-family:var(--serif);font-size:21px;line-height:1.7;color:#2c3026;min-height:120px}
+  .d-cite{font-family:var(--serif);font-style:italic;color:var(--sage);font-size:14px;margin-top:16px;border-top:1px dashed var(--line);padding-top:14px}
+  .caret{display:inline-block;width:7px;height:1.1em;background:var(--sage);margin-left:3px;vertical-align:-3px;animation:blink 1.1s infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* ===== Sections ===== */
+  .sec{padding:56px 0}
+  .sec-head{margin-bottom:30px;display:flex;align-items:baseline;gap:16px}
+  .sec-num{font-family:var(--serif);font-style:italic;color:var(--sage-2);font-size:15px}
+  .sec-title{font-family:var(--serif);font-weight:400;font-size:32px;letter-spacing:-.01em}
+
+  /* Recent — 论文卡片堆叠 */
+  .stack{position:relative}
+  .paper{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start;padding:28px 0;border-top:1px solid var(--line);transition:padding-left .35s,background .35s;cursor:pointer}
+  .paper:last-child{border-bottom:1px solid var(--line)}
+  .paper:hover{padding-left:14px;background:linear-gradient(90deg,#fbfaf5,transparent 60%)}
+  .paper h4{font-family:var(--serif);font-weight:500;font-size:22px;letter-spacing:-.01em;margin-bottom:8px;transition:color .3s}
+  .paper:hover h4{color:var(--sage-deep)}
+  .paper .auth{font-family:var(--serif);font-style:italic;color:var(--clay);font-size:14px}
+  .meta{font-size:12.5px;color:var(--ink-2);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap}
+  .paper .re{font-family:var(--serif);font-style:italic;color:var(--sage);font-size:14px;white-space:nowrap}
+
+  /* Features — 三栏呼吸 */
+  .feats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line)}
+  .feat{padding:36px 28px;border-right:1px solid var(--line);transition:background .4s}
+  .feat:last-child{border-right:none}
+  .feat:hover{background:#fbfaf5}
+  .feat .n{font-family:var(--serif);font-style:italic;color:var(--sage-2);font-size:14px;margin-bottom:18px}
+  .feat h4{font-family:var(--serif);font-weight:500;font-size:20px;margin-bottom:10px}
+  .feat p{font-size:14px;color:var(--ink-2);line-height:1.7}
+
+  /* Stats — 一行衬线 */
+  .stats{font-family:var(--serif);text-align:center;padding:64px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .stats .row{display:flex;gap:64px;justify-content:center;flex-wrap:wrap}
+  .stat .n{font-size:42px;font-weight:400;letter-spacing:-.02em;color:var(--ink)}
+  .stat .n small{font-size:18px;color:var(--sage)}
+  .stat .l{font-style:italic;color:var(--ink-2);font-size:14px;margin-top:2px}
+
+  footer{padding:70px 0 50px;text-align:center;font-family:var(--serif);font-style:italic;color:var(--sage);font-size:15px}
+  @media(max-width:840px){
+    .nav-links{display:none}
+    .feats{grid-template-columns:1fr}
+    .feat{border-right:none;border-bottom:1px solid var(--line)}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-inner">
+    <div class="brand"><span class="leaf">❧</span> Literature Finder</div>
+    <div class="nav-links">
+      <a href="#">搜索</a><a href="#">我的库</a><a href="#">笔记</a>
+      <a href="#">阅读列表</a><a href="#">统计</a><a href="#">上传</a>
+    </div>
+    <div class="nav-right">
+      <span class="live"><span class="r"></span> AI 安静工作中</span>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">a quiet reading room for researchers</div>
+    <h1>把英文论文,<br>读成<span class="em">自己的话</span>。</h1>
+    <p class="hero-sub">上传 PDF,AI 以克制的节奏为你完成中文深读、段落翻译与可追溯的问答——少一些喧嚣,多一些理解。</p>
+    <div class="cta">
+      <button class="btn btn-primary">上传一篇论文</button>
+      <button class="btn btn-ghost">走进我的书架 <span class="ar">→</span></button>
+    </div>
+  </header>
+
+  <!-- AI 安静摘要 -->
+  <div class="digest-wrap">
+    <hr class="rule">
+    <div class="digest">
+      <span class="corner c-tl serif">— AI 札记 —</span>
+      <span class="corner c-br serif">No. 017</span>
+      <div class="d-label">一篇关于亲社会行为与幸福感的系统综述</div>
+      <div class="d-body" id="typed"></div>
+      <div class="d-cite">— 据 Hui et al., J. Positive Psychology, 2024; 整合 62 项研究</div>
+    </div>
+  </div>
+
+  <!-- Recent — 衬线条目 -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="sec-num">i.</span>
+      <h2 class="sec-title">最近搁在桌上的</h2>
+    </div>
+    <div class="stack">
+      <div class="paper">
+        <div>
+          <h4 class="serif">A Systematic Review of Prosocial Behavior and Wellbeing</h4>
+          <div class="auth">Hui et al.</div>
+          <div class="meta">J. Positive Psychology · 2024 · 3 小时前翻开</div>
+        </div>
+        <div class="re">继续阅读 →</div>
+      </div>
+      <div class="paper">
+        <div>
+          <h4 class="serif">Content and Thematic Analysis — A Practical Guide</h4>
+          <div class="auth">Braun & Clarke</div>
+          <div class="meta">Qualitative Research · 2023 · 昨天</div>
+        </div>
+        <div class="re">继续阅读 →</div>
+      </div>
+      <div class="paper">
+        <div>
+          <h4 class="serif">Social Exchange Theory in Cross-Cultural Context</h4>
+          <div class="auth">Harumi Befu</div>
+          <div class="meta">Annu. Rev. Anthropol. · 2 天前</div>
+        </div>
+        <div class="re">继续阅读 →</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats">
+    <div class="row">
+      <div class="stat"><div class="n"><span data-t="2841">0</span></div><div class="l">已深读</div></div>
+      <div class="stat"><div class="n"><span data-t="156">0</span></div><div class="l">手记</div></div>
+      <div class="stat"><div class="n"><span data-t="6">0</span><small> 库</small></div><div class="l">数据来源</div></div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="sec" style="padding-bottom:60px">
+    <div class="sec-head">
+      <span class="sec-num">ii.</span>
+      <h2 class="sec-title">为理解的工具</h2>
+    </div>
+    <div class="feats">
+      <div class="feat">
+        <div class="n">其一</div>
+        <h4>中文深读</h4>
+        <p>不堆砌要点,而是把方法、证据与结论理成一条可理解的脉络,写成你能用的笔记。</p>
+      </div>
+      <div class="feat">
+        <div class="n">其二</div>
+        <h4>段落翻译</h4>
+        <p>遇到难句,选中即得对照译文,保留学术术语的精度,不打断阅读的流。</p>
+      </div>
+      <div class="feat">
+        <div class="n">其三</div>
+        <h4>可追问</h4>
+        <p>对任何细节发问,AI 从原文作答并注明出处——像一位安静可靠的合著者。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>— 在喧嚣的研究里,留一处安静的工位 —</footer>
+</div>
+
+<script>
+  const txt="本研究以系统综述整合 2008 至 2023 年间的六十二项实证,显示亲社会行为与主观幸福感之间呈中等强度的正向关联。其中,志愿者行为的效应较金钱捐赠更为稳定,提示行为本身所伴随的社会接触可能是关键机制。";
+  const el=document.getElementById('typed');let i=0;
+  (function t(){if(i<txt.length){el.innerHTML=txt.slice(0,i)+'<span class="caret"></span>';i++;setTimeout(t,42);}else{el.innerHTML=txt;}})();
+  const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){const tg=+e.target.dataset.t;let c=0;const s=tg/60;const iv=setInterval(()=>{c+=s;if(c>=tg){c=tg;clearInterval(iv);}e.target.textContent=Math.floor(c).toLocaleString();},22);obs.unobserve(e.target);}});});
+  document.querySelectorAll('[data-t]').forEach(x=>obs.observe(x));
+</script>
+</body>
+</html>

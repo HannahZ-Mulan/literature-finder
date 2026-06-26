@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task 1 换肤效果预览 · Warm Scholar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /*
+    ⚠️ 本页所有颜色 = 直接搬运 globals.css 的 CSS 变量值
+       逐字对应 Task 1 改动后的 :root 与 .dark
+       hsl() 格式与项目里 hsl(var(--xxx)) 渲染结果一致
+  */
+  :root{
+    /* 浅色 — 来自 globals.css :root */
+    --background: hsl(42 38% 96%);
+    --foreground: hsl(30 18% 12%);
+    --card: hsl(42 50% 99%);
+    --card-foreground: hsl(30 18% 12%);
+    --popover: hsl(42 50% 99%);
+    --primary: hsl(30 22% 10%);
+    --primary-foreground: hsl(42 50% 96%);
+    --secondary: hsl(38 32% 91%);
+    --secondary-foreground: hsl(30 18% 12%);
+    --muted: hsl(38 32% 91%);
+    --muted-foreground: hsl(35 14% 42%);
+    --accent: hsl(40 76% 40%);
+    --accent-foreground: hsl(42 50% 99%);
+    --destructive: hsl(14 62% 41%);
+    --destructive-foreground: hsl(42 50% 99%);
+    --border: hsl(38 26% 84%);
+    --input: hsl(38 26% 84%);
+    --ring: hsl(40 76% 40%);
+    --chart-1: hsl(40 76% 40%);
+    --chart-2: hsl(14 62% 41%);
+    --chart-3: hsl(95 22% 40%);
+    --chart-4: hsl(205 45% 32%);
+    --chart-5: hsl(28 52% 50%);
+    --radius: 0.5rem;
+  }
+  .dark{
+    --background: hsl(30 16% 8%);
+    --foreground: hsl(42 38% 90%);
+    --card: hsl(30 14% 11%);
+    --card-foreground: hsl(42 38% 90%);
+    --popover: hsl(30 14% 11%);
+    --primary: hsl(42 38% 90%);
+    --primary-foreground: hsl(30 22% 10%);
+    --secondary: hsl(30 12% 18%);
+    --secondary-foreground: hsl(42 38% 90%);
+    --muted: hsl(30 12% 18%);
+    --muted-foreground: hsl(38 14% 65%);
+    --accent: hsl(40 76% 55%);
+    --accent-foreground: hsl(30 22% 10%);
+    --destructive: hsl(10 65% 50%);
+    --destructive-foreground: hsl(42 50% 96%);
+    --border: hsl(30 12% 22%);
+    --input: hsl(30 12% 22%);
+    --ring: hsl(40 76% 55%);
+    --chart-1: hsl(40 76% 55%);
+    --chart-2: hsl(14 62% 52%);
+    --chart-3: hsl(95 25% 52%);
+    --chart-4: hsl(205 50% 50%);
+    --chart-5: hsl(28 55% 60%);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--background);color:var(--foreground);
+    line-height:1.6;-webkit-font-smoothing:antialiased;
+    transition:background .3s,color .3s;
+  }
+  .serif{font-family:'Fraunces',Georgia,serif}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 28px}
+
+  /* ===== 顶部说明栏 ===== */
+  .topbar{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
+    background:color-mix(in srgb,var(--background) 80%,transparent);
+    border-bottom:1px solid var(--border)}
+  .topbar-in{display:flex;align-items:center;justify-content:space-between;height:62px}
+  .topbar h1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:10px}
+  .topbar h1 .tag{font-size:11px;font-weight:500;padding:3px 9px;border-radius:6px;
+    background:var(--accent);color:var(--accent-foreground);font-family:'JetBrains Mono',monospace}
+  .modes{display:flex;gap:6px;padding:4px;background:var(--muted);border-radius:10px}
+  .modes button{border:none;background:transparent;padding:7px 16px;border-radius:7px;
+    font-size:13px;font-weight:500;color:var(--muted-foreground);cursor:pointer;transition:all .2s}
+  .modes button.on{background:var(--background);color:var(--foreground);
+    box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+  /* ===== 区块通用 ===== */
+  section{padding:48px 0;border-bottom:1px solid var(--border)}
+  .sec-kicker{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:8px}
+  .sec-title{font-family:'Fraunces',serif;font-size:30px;font-weight:500;letter-spacing:-.015em;margin-bottom:6px}
+  .sec-desc{font-size:14px;color:var(--muted-foreground);margin-bottom:28px;max-width:640px}
+
+  /* ===== 色板 ===== */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .sw{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card)}
+  .sw .chip{height:64px}
+  .sw .info{padding:10px 12px}
+  .sw .nm{font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace}
+  .sw .val{font-size:10px;color:var(--muted-foreground);font-family:'JetBrains Mono',monospace;margin-top:2px}
+
+  /* ===== 组件预览 ===== */
+  .comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .comp-box{border:1px solid var(--border);border-radius:14px;padding:24px;background:var(--card)}
+  .comp-box h4{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted-foreground);
+    text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;font-weight:600}
+
+  /* shadcn 按钮 (忠实复刻 components/ui/button.tsx 的 cva 变体) */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font-size:14px;font-weight:500;height:40px;padding:0 16px;border-radius:calc(var(--radius) - 2px);
+    border:none;cursor:pointer;transition:all .15s;font-family:inherit}
+  .btn-default{background:var(--primary);color:var(--primary-foreground)}
+  .btn-secondary{background:var(--secondary);color:var(--secondary-foreground)}
+  .btn-destructive{background:var(--destructive);color:var(--destructive-foreground)}
+  .btn-outline{border:1px solid var(--border);background:var(--background);color:var(--foreground)}
+  .btn-ghost{background:transparent;color:var(--foreground)}
+  .btn-link{background:transparent;color:var(--primary);text-decoration:underline;text-underline-offset:4px}
+  .btn-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .btn-sm{height:32px;padding:0 12px;font-size:13px}
+  .btn-lg{height:44px;padding:0 24px;font-size:15px}
+  .btn:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+  /* badge */
+  .badge{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;
+    font-size:11px;font-weight:600;border:1px solid transparent}
+  .badge-default{background:var(--primary);color:var(--primary-foreground)}
+  .badge-secondary{background:var(--secondary);color:var(--secondary-foreground)}
+  .badge-destructive{background:var(--destructive);color:var(--destructive-foreground)}
+  .badge-outline{border-color:var(--border);color:var(--foreground)}
+
+  /* card */
+  .card{border:1px solid var(--border);border-radius:var(--radius);background:var(--card);
+    color:var(--card-foreground);padding:20px}
+  .card h5{font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin-bottom:6px}
+  .card p{font-size:13px;color:var(--muted-foreground)}
+
+  /* input */
+  .input{height:40px;width:100%;padding:0 12px;border-radius:calc(var(--radius) - 2px);
+    border:1px solid var(--input);background:var(--background);color:var(--foreground);
+    font-size:14px;font-family:inherit}
+  .input:focus{outline:2px solid var(--ring);outline-offset:2px;border-color:var(--ring)}
+
+  /* progress */
+  .prog{height:8px;background:var(--secondary);border-radius:999px;overflow:hidden}
+  .prog>div{height:100%;width:64%;background:var(--primary);border-radius:999px}
+
+  /* tabs */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border)}
+  .tab{padding:9px 14px;font-size:13px;font-weight:500;color:var(--muted-foreground);
+    border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent}
+  .tab.on{color:var(--foreground);border-bottom-color:var(--foreground)}
+
+  /* ===== 首页 hero 对比 ===== */
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .vs-col{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card)}
+  .vs-head{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;
+    align-items:center;justify-content:space-between;font-size:12px;font-weight:600;
+    font-family:'JetBrains Mono',monospace}
+  .vs-head .st{padding:3px 8px;border-radius:5px;font-size:10px}
+  .st-now{background:#fee2e2;color:#991b1b}
+  .st-goal{background:#dcfce7;color:#166534}
+  .dark .st-now{background:#7f1d1d;color:#fecaca}
+  .dark .st-goal{background:#14532d;color:#bbf7d0}
+  .vs-body{padding:28px}
+
+  /* 现状(Task1 后):底色暖了,但 hero 硬编码蓝紫渐变还在 */
+  .hero-now h1{font-size:30px;font-weight:700;
+    background:linear-gradient(to right,#2563eb,#4f46e5,#9333ea);
+    -webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.1}
+  .hero-now .btn-cta{background:linear-gradient(to right,#9333ea,#db2777);color:#fff;
+    box-shadow:0 4px 12px -2px #9333ea80}
+  /* 目标态:衬线 + 琥珀高亮 + 墨按钮 */
+  .hero-goal h1{font-family:'Fraunces',serif;font-size:30px;font-weight:500;color:var(--foreground);line-height:1.1}
+  .hero-goal h1 em{font-style:italic;color:var(--accent);
+    background:linear-gradient(180deg,transparent 62%,hsl(40 76% 75% / .5) 62%)}
+  .hero-goal .btn-cta{background:var(--primary);color:var(--primary-foreground)}
+  .cta-row{display:flex;gap:10px;margin-top:18px}
+  .cta-row .btn{height:38px;padding:0 16px}
+
+  /* ===== 论文条目 ===== */
+  .paper-list{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--card)}
+  .paper-item{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+    border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+  .paper-item:last-child{border-bottom:none}
+  .paper-item:hover{background:var(--muted)}
+  .paper-item h6{font-family:'Fraunces',serif;font-weight:500;font-size:15px;margin-bottom:4px}
+  .paper-item .m{font-size:11px;color:var(--muted-foreground);display:flex;gap:10px}
+  .paper-item .m .jrnl{font-style:italic;color:var(--accent)}
+
+  /* ===== 图表色样 ===== */
+  .chart-demo{display:flex;align-items:flex-end;gap:14px;height:160px;padding:20px;
+    border:1px solid var(--border);border-radius:12px;background:var(--card)}
+  .bar{flex:1;border-radius:6px 6px 0 0;transition:opacity .2s;cursor:pointer}
+  .bar:hover{opacity:.8}
+  .chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+  .lg{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted-foreground)}
+  .lg .d{width:11px;height:11px;border-radius:3px}
+
+  /* ===== 模式徽章 ===== */
+  .pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;
+    font-size:12px;font-weight:500;border:1px solid var(--border)}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+
+  footer{padding:40px 0;text-align:center;color:var(--muted-foreground);font-size:13px}
+  footer code{font-family:'JetBrains Mono',monospace;background:var(--muted);
+    padding:2px 7px;border-radius:5px;color:var(--accent)}
+
+  @media(max-width:820px){
+    .comp-grid,.vs{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <h1><span class="tag">TASK 1</span> Warm Scholar 换肤预览 <span style="font-weight:400;color:var(--muted-foreground);font-size:13px">· globals.css</span></h1>
+    <div class="modes">
+      <button class="on" onclick="setMode('light',this)">浅色</button>
+      <button onclick="setMode('dark',this)">深色</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- 色板 -->
+  <section>
+    <div class="sec-kicker">// 01 · color tokens</div>
+    <h2 class="sec-title serif">色板</h2>
+    <p class="sec-desc">以下每个色块<strong>逐字对应</strong> <code class="mono">globals.css</code> 里的 CSS 变量值。切换右上角浅/深模式,两套色板都会实时变化——这正是 shadcn 组件自动换肤的来源。</p>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:var(--background);border-bottom:1px solid var(--border)"></div><div class="info"><div class="nm">background</div><div class="val">42 38% 96%</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--foreground)"></div><div class="info"><div class="nm">foreground</div><div class="val">30 18% 12%</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--card);border-bottom:1px solid var(--border)"></div><div class="info"><div class="nm">card</div><div class="val">42 50% 99%</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--primary)"></div><div class="info"><div class="nm">primary</div><div class="val">30 22% 10%</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--secondary)"></div><div class="info"><div class="nm">secondary</div><div class="val">38 32% 91%</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--muted)"></div><div class="info"><div class="nm">muted</div><div class="val">38 32% 91%</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--muted-foreground)"></div><div class="info"><div class="nm">muted-fg</div><div class="val">35 14% 42%</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--accent)"></div><div class="info"><div class="nm">accent ★</div><div class="val">40 76% 40%</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--destructive)"></div><div class="info"><div class="nm">destructive</div><div class="val">14 62% 41%</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--border)"></div><div class="info"><div class="nm">border</div><div class="val">38 26% 84%</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--ring)"></div><div class="info"><div class="nm">ring ★</div><div class="val">40 76% 40%</div></div></div>
+    </div>
+  </section>
+
+  <!-- 图表色 -->
+  <section>
+    <div class="sec-kicker">// 02 · chart palette</div>
+    <h2 class="sec-title serif">图表配色</h2>
+    <p class="sec-desc">统计页的 recharts 图表色已从冷暖混搭改为<strong>全暖色系</strong>。柱状图示例使用 <code class="mono">--chart-1</code> 到 <code class="mono">--chart-5</code>。</p>
+    <div class="chart-demo">
+      <div class="bar" style="background:var(--chart-1);height:92%"></div>
+      <div class="bar" style="background:var(--chart-2);height:68%"></div>
+      <div class="bar" style="background:var(--chart-3);height:80%"></div>
+      <div class="bar" style="background:var(--chart-4);height:54%"></div>
+      <div class="bar" style="background:var(--chart-5);height:74%"></div>
+      <div class="bar" style="background:var(--chart-1);height:62%;opacity:.6"></div>
+      <div class="bar" style="background:var(--chart-2);height:46%;opacity:.6"></div>
+    </div>
+    <div class="chart-legend">
+      <div class="lg"><span class="d" style="background:var(--chart-1)"></span>chart-1 琥珀</div>
+      <div class="lg"><span class="d" style="background:var(--chart-2)"></span>chart-2 赭红</div>
+      <div class="lg"><span class="d" style="background:var(--chart-3)"></span>chart-3 苔绿</div>
+      <div class="lg"><span class="d" style="background:var(--chart-4)"></span>chart-4 深蓝</div>
+      <div class="lg"><span class="d" style="background:var(--chart-5)"></span>chart-5 陶土</div>
+    </div>
+  </section>
+
+  <!-- shadcn 组件 -->
+  <section>
+    <div class="sec-kicker">// 03 · shadcn components</div>
+    <h2 class="sec-title serif">组件自动换肤</h2>
+    <p class="sec-desc">这 16 个 shadcn 组件<strong>一行代码都没改</strong>,仅靠消费 CSS 变量就自动跟随新色板。点输入框看琥珀焦点环,点按钮看交互态。</p>
+
+    <div class="comp-grid">
+      <!-- 按钮 -->
+      <div class="comp-box">
+        <h4>Button · 6 变体</h4>
+        <div class="btn-row" style="margin-bottom:14px">
+          <button class="btn btn-default">Primary</button>
+          <button class="btn btn-secondary">Secondary</button>
+          <button class="btn btn-destructive">Destructive</button>
+        </div>
+        <div class="btn-row" style="margin-bottom:14px">
+          <button class="btn btn-outline">Outline</button>
+          <button class="btn btn-ghost">Ghost</button>
+          <button class="btn btn-link">Link</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-default btn-sm">Small</button>
+          <button class="btn btn-default">Default</button>
+          <button class="btn btn-default btn-lg">Large</button>
+        </div>
+      </div>
+
+      <!-- 输入/进度 -->
+      <div class="comp-box">
+        <h4>Input · Focus 看琥珀环</h4>
+        <input class="input" placeholder="点我,看 focus 焦点环颜色 →" style="margin-bottom:18px">
+        <h4 style="margin-top:8px">Progress</h4>
+        <div class="prog"><div></div></div>
+        <div style="margin-top:18px">
+          <h4>Badge</h4>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <span class="badge badge-default">Default</span>
+            <span class="badge badge-secondary">Secondary</span>
+            <span class="badge badge-destructive">Error</span>
+            <span class="badge badge-outline">Outline</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 卡片 -->
+      <div class="comp-box">
+        <h4>Card</h4>
+        <div class="card" style="margin-bottom:12px">
+          <h5>AI 中文解读</h5>
+          <p>结构化拆解方法、结论与贡献,一键生成可编辑的研读笔记。</p>
+        </div>
+        <div class="card">
+          <h5>段落级翻译</h5>
+          <p>难句即时对照翻译,保留术语精度,贴合学术阅读习惯。</p>
+        </div>
+      </div>
+
+      <!-- Tabs + pill -->
+      <div class="comp-box">
+        <h4>Tabs · 状态徽章</h4>
+        <div class="tabs" style="margin-bottom:18px">
+          <button class="tab on">概览</button>
+          <button class="tab">笔记</button>
+          <button class="tab">引用</button>
+          <button class="tab">问答</button>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <span class="pill"><span class="dot"></span> AI 在线</span>
+          <span class="pill" style="color:var(--accent)">已总结</span>
+          <span class="pill">DOI ✓</span>
+        </div>
+        <div style="margin-top:18px;font-size:13px;color:var(--muted-foreground)">
+          <span class="mono" style="color:var(--accent)">muted-foreground</span> 文字像这样,比纯灰更暖、更可读。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 首页 hero 对比 -->
+  <section>
+    <div class="sec-kicker">// 04 · home hero before / after</div>
+    <h2 class="sec-title serif">首页 hero · 现状 vs 目标</h2>
+    <p class="sec-desc"><strong>左</strong>是 Task 1 改完 <code class="mono">globals.css</code> 后的真实状态:底色变暖了,但 hero 标题和按钮的硬编码蓝紫渐变<strong>还在</strong>——这就是你现在跑 dev 会看到的割裂感。<strong>右</strong>是 Task 2-3 完成后的目标态。</p>
+
+    <div class="vs">
+      <!-- 现状 -->
+      <div class="vs-col">
+        <div class="vs-head">
+          <span>NOW · Task 1 后</span>
+          <span class="st st-now">硬编码残留</span>
+        </div>
+        <div class="vs-body hero-now" style="background:var(--background)">
+          <h1>AI Paper Reader</h1>
+          <p style="color:var(--muted-foreground);margin-top:10px;font-size:14px">底色已暖,但标题/按钮仍硬编码蓝紫 → 割裂</p>
+          <div class="cta-row">
+            <button class="btn btn-cta">上传论文</button>
+            <button class="btn btn-outline">我的论文</button>
+          </div>
+        </div>
+      </div>
+      <!-- 目标 -->
+      <div class="vs-col">
+        <div class="vs-head">
+          <span>GOAL · Task 2-3 后</span>
+          <span class="st st-goal">完全统一</span>
+        </div>
+        <div class="vs-body hero-goal" style="background:var(--background)">
+          <h1>让每一篇论文,<br>都获得一次<em>中文深读</em></h1>
+          <p style="color:var(--muted-foreground);margin-top:10px;font-size:14px">Fraunces 衬线 + 琥珀高亮 + 墨色按钮,全站一致</p>
+          <div class="cta-row">
+            <button class="btn btn-cta">↑ 上传论文</button>
+            <button class="btn btn-outline">浏览我的库</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 论文条目 -->
+  <section>
+    <div class="sec-kicker">// 05 · paper list</div>
+    <h2 class="sec-title serif">论文条目</h2>
+    <p class="sec-desc">"最近阅读"列表已自动换肤(用语义类 <code class="mono">bg-card</code> / <code class="mono">border</code> / <code class="mono">hover:bg-muted</code>)。hover 试试看。</p>
+    <div class="paper-list">
+      <div class="paper-item">
+        <div>
+          <h6>A Systematic Review of Prosocial Behavior and Wellbeing</h6>
+          <div class="m"><span class="jrnl">J. Positive Psychology</span><span>2024</span><span>Hui et al.</span><span>3 小时前</span></div>
+        </div>
+        <span class="pill" style="color:var(--accent)">已总结</span>
+      </div>
+      <div class="paper-item">
+        <div>
+          <h6>Content and Thematic Analysis — A Practical Guide</h6>
+          <div class="m"><span class="jrnl">Qualitative Research</span><span>2023</span><span>Braun & Clarke</span><span>昨天</span></div>
+        </div>
+        <span class="pill" style="color:var(--accent)">已总结</span>
+      </div>
+      <div class="paper-item">
+        <div>
+          <h6>Social Exchange Theory in Cross-Cultural Context</h6>
+          <div class="m"><span class="jrnl">Annu. Rev. Anthropol.</span><span>Harumi Befu</span><span>2 天前</span></div>
+        </div>
+        <span class="pill">未读</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>本页所有颜色 = <code>globals.css</code> 的 CSS 变量精确值 · 切换右上角看浅/深模式<br>
+    <span style="opacity:.7">Task 1 已完成。Task 2(字体)+ Task 3-7(清理 120 处硬编码)待执行。</span></p>
+  </footer>
+
+</div>
+
+<script>
+  function setMode(m, btn){
+    document.documentElement.classList.toggle('dark', m==='dark');
+    document.querySelectorAll('.modes button').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方向 A · 学术琥珀 Warm Scholar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#faf6ec;          /* 米白纸面 */
+    --paper-2:#f3ecdb;        /* 略深纸面 */
+    --ink:#1c1812;            /* 墨色 */
+    --ink-2:#4a423466;        /* 弱化墨 */
+    --amber:#b07d12;          /* 琥珀主色 */
+    --amber-soft:#e7c878;     /* 琥珀浅 */
+    --rust:#a64b2a;           /* 赭红点缀 */
+    --line:#d9cfb8;
+    --serif:'Fraunces',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--sans);color:var(--ink);background:var(--paper);
+    line-height:1.6;overflow-x:hidden;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, #fff3d280 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 30%, #f0e4c6 0%, transparent 55%);
+  }
+  /* 细微纸纹 */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.5 0 0 0 0 0.2 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 28px}
+  .eyebrow{font-family:var(--sans);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:600}
+  .serif{font-family:var(--serif)}
+
+  /* ===== Nav ===== */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);
+      background:rgba(250,246,236,.78);border-bottom:1px solid var(--line)}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{display:flex;align-items:center;gap:11px;font-family:var(--serif);font-weight:600;font-size:20px;letter-spacing:-.01em}
+  .brand .mark{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;
+    background:linear-gradient(135deg,var(--amber),var(--rust));box-shadow:0 4px 12px -3px #b07d1280}
+  .nav-links{display:flex;gap:30px;align-items:center}
+  .nav-links a{font-size:14px;color:#5a513b;text-decoration:none;position:relative;padding:4px 0;transition:color .25s}
+  .nav-links a::after{content:"";position:absolute;left:0;bottom:-2px;width:0;height:1.5px;background:var(--amber);transition:width .3s ease}
+  .nav-links a:hover{color:var(--ink)}
+  .nav-links a:hover::after{width:100%}
+  .nav-right{display:flex;align-items:center;gap:14px;font-size:13px;color:#7a6f54}
+  .ai-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--amber-soft);
+    border-radius:999px;background:#fff8e8;font-size:12px;color:var(--amber);font-weight:500}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 #b07d1280}50%{box-shadow:0 0 0 6px #b07d1200}}
+
+  /* ===== Hero ===== */
+  header{padding:84px 0 60px;text-align:center}
+  .hero-title{font-family:var(--serif);font-weight:500;font-size:clamp(40px,6vw,68px);line-height:1.04;letter-spacing:-.025em;margin:18px 0 0}
+  .hero-title em{font-style:italic;color:var(--amber);font-weight:400;
+    background:linear-gradient(180deg,transparent 62%,#f3d77a55 62%)}
+  .hero-sub{max-width:600px;margin:24px auto 0;font-size:18px;color:#6b604c}
+  .cta{display:flex;gap:14px;justify-content:center;margin-top:36px}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border-radius:10px;font-weight:500;font-size:15px;cursor:pointer;border:none;transition:all .25s;text-decoration:none}
+  .btn-primary{background:var(--ink);color:#fbf6e9}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px -10px #1c181299}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--amber);color:var(--amber)}
+
+  /* ===== AI Digest (智能感核心) ===== */
+  .digest{margin:64px auto;max-width:760px;background:#fffdf6;border:1px solid var(--line);
+    border-radius:18px;padding:30px 34px;box-shadow:0 30px 60px -36px #b07d1255;position:relative;overflow:hidden}
+  .digest::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent,#fff6d820,transparent);
+    transform:translateX(-100%);animation:shimmer 5s infinite}
+  @keyframes shimmer{to{transform:translateX(100%)}}
+  .digest-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .digest-head .spark{font-family:var(--serif);font-style:italic;color:var(--amber)}
+  .digest-body{font-family:var(--serif);font-size:20px;line-height:1.65;color:#2a2418;min-height:120px}
+  .cursor{display:inline-block;width:2px;height:1em;background:var(--amber);margin-left:2px;vertical-align:-3px;animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:0}}
+  .digest-tags{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+  .tag{font-size:12px;padding:4px 10px;border-radius:6px;background:var(--paper-2);color:#6b5a2a;font-family:var(--sans)}
+
+  /* ===== Section title ===== */
+  .sec{padding:40px 0}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:24px}
+  .sec-title{font-family:var(--serif);font-size:28px;font-weight:500;letter-spacing:-.01em}
+  .sec-link{font-size:13px;color:var(--amber);text-decoration:none}
+  .sec-link:hover{text-decoration:underline}
+
+  /* ===== Recent papers (学术条目) ===== */
+  .papers{background:transparent;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .paper{display:grid;grid-template-columns:54px 1fr auto;gap:18px;align-items:center;padding:20px 24px;border-bottom:1px solid var(--line);transition:background .25s;cursor:pointer}
+  .paper:last-child{border-bottom:none}
+  .paper:hover{background:#fff8e6}
+  .paper .idx{font-family:var(--serif);font-style:italic;color:var(--amber-soft);font-size:22px}
+  .paper h4{font-family:var(--serif);font-weight:500;font-size:17px;margin-bottom:5px;letter-spacing:-.005em}
+  .meta{display:flex;gap:14px;font-size:12px;color:#8a7d5e;font-family:var(--sans)}
+  .meta span{display:inline-flex;align-items:center;gap:5px}
+  .journal{font-style:italic;color:var(--rust)}
+  .paper .go{color:#b8a877;transition:transform .25s,color .25s}
+  .paper:hover .go{transform:translateX(4px);color:var(--amber)}
+
+  /* ===== Features ===== */
+  .feats{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .feat{background:#fffdf6;border:1px solid var(--line);border-radius:14px;padding:26px;transition:transform .3s,box-shadow .3s}
+  .feat:hover{transform:translateY(-4px);box-shadow:0 24px 40px -28px #b07d1280}
+  .feat .ico{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;margin-bottom:16px;
+    background:linear-gradient(135deg,#fdf0cc,#f3e0a8);color:var(--amber);font-size:20px}
+  .feat h4{font-family:var(--serif);font-size:18px;font-weight:500;margin-bottom:7px}
+  .feat p{font-size:14px;color:#6b604c}
+  .feat .num{float:right;font-family:var(--serif);font-style:italic;color:var(--amber-soft);font-size:14px}
+
+  /* ===== Stats strip ===== */
+  .stats{display:flex;gap:48px;justify-content:center;padding:48px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:48px 0}
+  .stat{text-align:center}
+  .stat .n{font-family:var(--serif);font-size:38px;font-weight:500;color:var(--ink);letter-spacing:-.02em}
+  .stat .l{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#8a7d5e;margin-top:4px}
+
+  footer{padding:50px 0 40px;text-align:center;color:#9a8d6e;font-size:13px}
+  footer .serif{color:var(--amber)}
+
+  @media(max-width:840px){
+    .nav-links{display:none}
+    .feats{grid-template-columns:1fr}
+    .paper{grid-template-columns:32px 1fr}
+    .paper .go{display:none}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-inner">
+    <div class="brand"><span class="mark">❦</span> Literature Finder</div>
+    <div class="nav-links">
+      <a href="#">学术搜索</a>
+      <a href="#">我的库</a>
+      <a href="#">我的笔记</a>
+      <a href="#">阅读列表</a>
+      <a href="#">统计分析</a>
+      <a href="#">上传论文</a>
+    </div>
+    <div class="nav-right">
+      <span class="ai-pill"><span class="dot"></span> AI 在线</span>
+      <span>测试模式</span>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">AI-Powered Reading · for Researchers</div>
+    <h1 class="hero-title serif">让每一篇英文论文,<br>都获得一次<em>中文深读</em></h1>
+    <p class="hero-sub">上传 PDF,AI 自动生成中文摘要、段落翻译与可追问的智能笔记——为科研节奏而生的阅读工作台。</p>
+    <div class="cta">
+      <button class="btn btn-primary">↑ 上传论文</button>
+      <button class="btn btn-ghost">浏览我的库</button>
+    </div>
+  </header>
+
+  <!-- AI 智能摘要：打字机 -->
+  <div class="digest">
+    <div class="digest-head">
+      <span class="spark">✦ AI 摘要</span>
+      <span class="tag">Prosocial Wellbeing · Systematic Review</span>
+    </div>
+    <div class="digest-body" id="typed"></div>
+    <div class="digest-tags">
+      <span class="tag"># 系统综述</span>
+      <span class="tag"># 亲社会行为</span>
+      <span class="tag"># 幸福感</span>
+      <span class="tag">↑ 引用 12 篇</span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat"><div class="n" data-target="2841">0</div><div class="l">已读论文</div></div>
+    <div class="stat"><div class="n" data-target="156">0</div><div class="l">阅读笔记</div></div>
+    <div class="stat"><div class="n" data-target="6">0</div><div class="l">接入数据库</div></div>
+  </div>
+
+  <!-- Recent papers -->
+  <section class="sec">
+    <div class="sec-head">
+      <h2 class="sec-title serif">最近阅读 <span style="font-style:italic;color:#b8a877;font-size:16px">Recent</span></h2>
+      <a class="sec-link" href="#">查看全部 →</a>
+    </div>
+    <div class="papers">
+      <div class="paper">
+        <div class="idx serif">i.</div>
+        <div>
+          <h4>A Systematic Review of Prosocial Behavior and Wellbeing</h4>
+          <div class="meta">
+            <span class="journal">J. Positive Psychology</span>
+            <span>· 2024</span>
+            <span>· Hui et al.</span>
+            <span>· 3 小时前</span>
+          </div>
+        </div>
+        <div class="go">→</div>
+      </div>
+      <div class="paper">
+        <div class="idx serif">ii.</div>
+        <div>
+          <h4>Content and Thematic Analysis: A Practical Guide</h4>
+          <div class="meta">
+            <span class="journal">Qualitative Research</span>
+            <span>· 2023</span>
+            <span>· Braun & Clarke</span>
+            <span>· 昨天</span>
+          </div>
+        </div>
+        <div class="go">→</div>
+      </div>
+      <div class="paper">
+        <div class="idx serif">iii.</div>
+        <div>
+          <h4>Social Exchange Theory in Cross-Cultural Context</h4>
+          <div class="meta">
+            <span class="journal">Annu. Rev. Anthropol.</span>
+            <span>· Harumi Befu</span>
+            <span>· 2 天前</span>
+          </div>
+        </div>
+        <div class="go">→</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="sec" style="padding-bottom:60px">
+    <div class="sec-head"><h2 class="sec-title serif">为研究而设计</h2></div>
+    <div class="feats">
+      <div class="feat">
+        <span class="num">01</span>
+        <div class="ico">✎</div>
+        <h4>AI 中文解读</h4>
+        <p>结构化拆解方法、结论与贡献,一键生成可编辑的中文研读笔记。</p>
+      </div>
+      <div class="feat">
+        <span class="num">02</span>
+        <div class="ico">⇄</div>
+        <h4>段落级翻译</h4>
+        <p>难句即时对照翻译,保留术语精度,贴合学术阅读习惯。</p>
+      </div>
+      <div class="feat">
+        <span class="num">03</span>
+        <div class="ico">✦</div>
+        <h4>可追问助手</h4>
+        <p>就论文任意细节追问,AI 基于原文回答并标注引用位置。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>Literature Finder · <span class="serif">为研究者打造的安静工具</span></div>
+  </footer>
+</div>
+
+<script>
+  // 打字机 AI 摘要
+  const text = "本研究通过系统综述整合了 2008–2023 年间 62 项实证研究,发现亲社会行为与主观幸福感之间存在中等强度的正向关联(r ≈ .34),且该效应在志愿者行为中比金钱捐赠更稳定。作者建议未来研究关注文化调节变量。";
+  const el = document.getElementById('typed');
+  let i=0;
+  function type(){
+    if(i<text.length){ el.innerHTML = text.slice(0,i)+'<span class="cursor"></span>'; i++; setTimeout(type,28); }
+    else { el.innerHTML = text; }
+  }
+  setTimeout(type, 600);
+
+  // 数字滚动
+  const obs = new IntersectionObserver((es)=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        const n=+e.target.dataset.target; let c=0; const step=Math.max(1,n/60);
+        const t=setInterval(()=>{c+=step; if(c>=n){c=n;clearInterval(t);} e.target.textContent=Math.floor(c).toLocaleString();},18);
+        obs.unobserve(e.target);
+      }
+    });
+  });
+  document.querySelectorAll('[data-target]').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>

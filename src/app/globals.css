@@ -12,57 +12,60 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Warm Scholar — 米白纸面 + 琥珀点缀 + 墨色文字 */
+    --background: 42 38% 96%;          /* 米白纸面 #faf6ec */
+    --foreground: 30 18% 12%;          /* 墨色 #1c1812 */
+    --card: 42 50% 99%;                /* 略提亮的纸面卡片 #fffdf6 */
+    --card-foreground: 30 18% 12%;
+    --popover: 42 50% 99%;
+    --popover-foreground: 30 18% 12%;
+    --primary: 30 22% 10%;             /* 深墨,作按钮主色(沉稳可点击) */
+    --primary-foreground: 42 50% 96%;
+    --secondary: 38 32% 91%;           /* 浅纸面 #f3ecdb */
+    --secondary-foreground: 30 18% 12%;
+    --muted: 38 32% 91%;
+    --muted-foreground: 35 14% 42%;    /* 弱化墨 #6b604c */
+    --accent: 40 76% 40%;              /* 琥珀,焦点/强调高亮 */
+    --accent-foreground: 42 50% 99%;
+    --destructive: 14 62% 41%;         /* 赭红 #a64b2a */
+    --destructive-foreground: 42 50% 99%;
+    --border: 38 26% 84%;              /* 暖灰线 #d9cfb8 */
+    --input: 38 26% 84%;
+    --ring: 40 76% 40%;                /* 琥珀焦点环 */
+    /* 图表暖色系:琥珀 / 赭红 / 苔绿 / 深蓝 / 陶土 */
+    --chart-1: 40 76% 40%;             /* 琥珀 #b07d12 */
+    --chart-2: 14 62% 41%;             /* 赭红 #a64b2a */
+    --chart-3: 95 22% 40%;             /* 苔绿 #5e6e4a */
+    --chart-4: 205 45% 32%;            /* 深蓝 #2d5470 */
+    --chart-5: 28 52% 50%;             /* 陶土 #c1845a */
     --radius: 0.5rem;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Warm Scholar — 暖夜模式:深棕底 + 提亮琥珀 */
+    --background: 30 16% 8%;           /* 暖黑 #1c1812 */
+    --foreground: 42 38% 90%;          /* 暖白 */
+    --card: 30 14% 11%;                /* 略提亮卡片 */
+    --card-foreground: 42 38% 90%;
+    --popover: 30 14% 11%;
+    --popover-foreground: 42 38% 90%;
+    --primary: 42 38% 90%;             /* 暗底反转:按钮用暖白 */
+    --primary-foreground: 30 22% 10%;
+    --secondary: 30 12% 18%;
+    --secondary-foreground: 42 38% 90%;
+    --muted: 30 12% 18%;
+    --muted-foreground: 38 14% 65%;
+    --accent: 40 76% 55%;              /* 提亮琥珀以保对比度 */
+    --accent-foreground: 30 22% 10%;
+    --destructive: 10 65% 50%;
+    --destructive-foreground: 42 50% 96%;
+    --border: 30 12% 22%;
+    --input: 30 12% 22%;
+    --ring: 40 76% 55%;
+    --chart-1: 40 76% 55%;
+    --chart-2: 14 62% 52%;
+    --chart-3: 95 25% 52%;
+    --chart-4: 205 50% 50%;
+    --chart-5: 28 55% 60%;
   }
 }
 

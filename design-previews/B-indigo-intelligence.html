@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方向 B · 靛蓝智识 Indigo Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f8fb;
+    --bg-2:#eef1f7;
+    --ink:#0c0f1a;
+    --ink-2:#5b6478;
+    --indigo:#4f46e5;
+    --indigo-2:#6366f1;
+    --violet:#7c3aed;
+    --cyan:#0891b2;
+    --line:#e3e7f0;
+    --glass:rgba(255,255,255,.72);
+    --serif:'Instrument Serif',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
+    --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.6;overflow-x:hidden;position:relative}
+  /* 动态网格背景 */
+  .mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;animation:float 16s ease-in-out infinite}
+  .b1{width:480px;height:480px;background:#c7d2fe;top:-120px;left:-80px}
+  .b2{width:420px;height:420px;background:#ddd6fe;top:30%;right:-100px;animation-delay:-4s}
+  .b3{width:380px;height:380px;background:#cffafe;bottom:-120px;left:30%;animation-delay:-8s}
+  @keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-30px)}}
+  .grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.4;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:48px 48px;mask-image:radial-gradient(ellipse at 50% 0%,#000 0%,transparent 70%)}
+
+  .wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 28px}
+  .mono{font-family:var(--mono)}
+  .serif{font-family:var(--serif)}
+
+  /* ===== Nav ===== */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:rgba(247,248,251,.7);border-bottom:1px solid var(--line)}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.02em}
+  .brand .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--indigo),var(--violet));display:grid;place-items:center;color:#fff;font-size:14px;box-shadow:0 4px 14px -4px #4f46e5aa}
+  .brand .mark::after{content:"";position:absolute;width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--indigo),var(--violet));filter:blur(8px);opacity:.5;z-index:-1}
+  .nav-links{display:flex;gap:4px;align-items:center}
+  .nav-links a{font-size:13.5px;color:var(--ink-2);text-decoration:none;padding:7px 13px;border-radius:8px;transition:all .2s;font-weight:500}
+  .nav-links a:hover{color:var(--ink);background:#fff;box-shadow:0 1px 3px #0000000d}
+  .nav-right{display:flex;align-items:center;gap:12px}
+  .kbd{font-family:var(--mono);font-size:12px;padding:4px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink-2);cursor:pointer;transition:all .2s}
+  .kbd:hover{border-color:var(--indigo);color:var(--indigo)}
+
+  /* ===== Hero ===== */
+  header{padding:90px 0 50px}
+  .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:50px;align-items:center}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 13px;border:1px solid var(--line);border-radius:999px;background:var(--glass);font-size:12px;color:var(--ink-2);backdrop-filter:blur(8px);font-weight:500}
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 3px #0891b233}
+  h1{font-family:var(--sans);font-weight:700;font-size:clamp(36px,4.6vw,56px);line-height:1.06;letter-spacing:-.035em;margin:22px 0 0}
+  h1 .ital{font-family:var(--serif);font-style:italic;font-weight:400;background:linear-gradient(120deg,var(--indigo),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero-sub{font-size:17px;color:var(--ink-2);max-width:520px;margin:22px 0 0}
+  .cta{display:flex;gap:12px;margin-top:30px;align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:12px 22px;border-radius:10px;font-weight:600;font-size:14.5px;cursor:pointer;border:none;text-decoration:none;transition:all .25s}
+  .btn-primary{background:var(--ink);color:#fff}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 30px -10px #0c0f1a99}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--ink)}
+
+  /* AI 智能卡片 — 玻璃态 + 思考脉冲 */
+  .ai-card{position:relative;background:var(--glass);backdrop-filter:blur(20px);border:1px solid #ffffffaa;border-radius:20px;padding:26px;box-shadow:0 30px 70px -36px #4f46e566;overflow:hidden}
+  .ai-card::before{content:"";position:absolute;inset:0;border-radius:20px;padding:1px;background:linear-gradient(135deg,#4f46e5aa,transparent 40%,transparent 60%,#7c3aedaa);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .ai-head{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .orb{width:34px;height:34px;border-radius:50%;background:conic-gradient(from 0deg,var(--indigo),var(--violet),var(--cyan),var(--indigo));animation:spin 4s linear infinite;position:relative}
+  .orb::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--bg)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .ai-head .t{font-size:13px;font-weight:600}
+  .ai-head .s{font-size:11px;color:var(--ink-2);font-family:var(--mono)}
+  .ai-body{font-family:var(--serif);font-size:19px;line-height:1.6;min-height:96px}
+  .ai-stream{color:var(--indigo);font-weight:500}
+  .ai-foot{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .chip{font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:6px;background:#eef2ff;color:var(--indigo)}
+  .think-bar{height:3px;border-radius:2px;background:var(--bg-2);margin-top:16px;overflow:hidden;position:relative}
+  .think-bar::after{content:"";position:absolute;inset:0;width:35%;background:linear-gradient(90deg,transparent,var(--indigo),transparent);animation:scan 1.8s infinite}
+  @keyframes scan{0%{left:-35%}100%{left:100%}}
+
+  /* ===== Sections ===== */
+  .sec{padding:46px 0}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px}
+  .sec-title{font-size:24px;font-weight:700;letter-spacing:-.02em}
+  .sec-title .em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--indigo)}
+  .sec-sub{font-size:12px;font-family:var(--mono);color:var(--ink-2);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+
+  /* Recent — 数据密度 */
+  .papers{border:1px solid var(--line);border-radius:16px;background:var(--glass);backdrop-filter:blur(8px);overflow:hidden}
+  .paper{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line);transition:all .2s;cursor:pointer}
+  .paper:last-child{border-bottom:none}
+  .paper:hover{background:#fff;transform:translateX(3px)}
+  .pid{font-family:var(--mono);font-size:11px;color:var(--ink-2);background:var(--bg-2);padding:5px 9px;border-radius:6px}
+  .paper h4{font-size:15.5px;font-weight:600;letter-spacing:-.01em;margin-bottom:5px}
+  .meta{display:flex;gap:12px;font-size:11.5px;color:var(--ink-2);font-family:var(--mono);flex-wrap:wrap}
+  .meta .jrnl{color:var(--indigo)}
+  .conf{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:#0f766e}
+  .conf .ddot{width:5px;height:5px;border-radius:50%;background:#10b981}
+
+  /* Features — bento */
+  .bento{display:grid;grid-template-columns:1.4fr 1fr 1fr;grid-template-rows:auto auto;gap:14px}
+  .feat{border:1px solid var(--line);border-radius:16px;padding:24px;background:var(--glass);backdrop-filter:blur(8px);transition:all .3s;position:relative;overflow:hidden}
+  .feat:hover{border-color:var(--indigo);transform:translateY(-3px);box-shadow:0 20px 40px -24px #4f46e588}
+  .feat.big{grid-row:span 2;background:linear-gradient(160deg,#eef2ff,#f5f3ff);border-color:#e0e7ff}
+  .feat .ico{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;margin-bottom:14px;background:#fff;color:var(--indigo);font-size:18px;box-shadow:0 6px 16px -8px #4f46e566}
+  .feat h4{font-size:16px;font-weight:600;margin-bottom:6px;letter-spacing:-.01em}
+  .feat p{font-size:13px;color:var(--ink-2)}
+  .feat.big h4{font-size:20px}
+  .feat.big p{font-size:14px}
+  .feat .tag{position:absolute;top:18px;right:18px;font-family:var(--mono);font-size:10px;color:var(--ink-2)}
+
+  /* Stats */
+  .stats{display:flex;gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+  .stat{flex:1;padding:26px;border-right:1px solid var(--line)}
+  .stat:last-child{border-right:none}
+  .stat .n{font-family:var(--serif);font-size:34px;font-weight:400;letter-spacing:-.02em}
+  .stat .n .u{font-size:16px;color:var(--ink-2)}
+  .stat .l{font-family:var(--mono);font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
+
+  footer{padding:60px 0 40px;text-align:center;color:var(--ink-2);font-size:13px}
+  footer .mono{color:var(--indigo)}
+  @media(max-width:880px){
+    .hero-grid{grid-template-columns:1fr}
+    .nav-links{display:none}
+    .bento{grid-template-columns:1fr}
+    .feat.big{grid-row:span 1}
+    .stats{flex-direction:column}
+    .stat{border-right:none;border-bottom:1px solid var(--line)}
+  }
+</style>
+</head>
+<body>
+<div class="mesh"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grid-overlay"></div>
+
+<nav>
+  <div class="wrap nav-inner">
+    <div class="brand"><span class="mark">◆</span> Literature Finder</div>
+    <div class="nav-links">
+      <a href="#">学术搜索</a><a href="#">我的库</a><a href="#">笔记</a>
+      <a href="#">阅读列表</a><a href="#">统计</a><a href="#">上传</a>
+    </div>
+    <div class="nav-right">
+      <span class="kbd">⌘K 搜索</span>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header>
+    <div class="hero-grid">
+      <div>
+        <span class="badge"><span class="dot"></span> AI 已分析 2,841 篇文献</span>
+        <h1>读懂每一篇论文,<br>用<span class="ital">研究者的速度</span>。</h1>
+        <p class="hero-sub">上传 PDF,AI 在秒级内完成中文解读、段落翻译与可追溯的智能问答——为高强度文献工作流而构建。</p>
+        <div class="cta">
+          <button class="btn btn-primary">上传论文 →</button>
+          <button class="btn btn-ghost">⌘K 全局搜索</button>
+        </div>
+      </div>
+
+      <!-- AI 卡片 -->
+      <div class="ai-card">
+        <div class="ai-head">
+          <div class="orb"></div>
+          <div>
+            <div class="t">AI 正在解析</div>
+            <div class="s">prosocial_wellbeing_SR.pdf</div>
+          </div>
+        </div>
+        <div class="ai-body serif">
+          <span id="stream" class="ai-stream"></span><span class="cursor" style="color:var(--indigo);font-weight:700">▍</span>
+        </div>
+        <div class="ai-foot">
+          <span class="chip">系统综述</span>
+          <span class="chip">n = 62</span>
+          <span class="chip">r ≈ .34</span>
+          <span class="chip">DOI ✓</span>
+        </div>
+        <div class="think-bar"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <section style="padding:30px 0 50px">
+    <div class="stats">
+      <div class="stat"><div class="n serif"><span data-c="2841">0</span></div><div class="l">papers analyzed</div></div>
+      <div class="stat"><div class="n serif"><span data-c="156">0</span></div><div class="l">notes</div></div>
+      <div class="stat"><div class="n serif"><span data-c="6">0</span></div><div class="l">data sources</div></div>
+      <div class="stat"><div class="n serif">~1.4<span class="u">s</span></div><div class="l">avg digest</div></div>
+    </div>
+  </section>
+
+  <!-- Recent -->
+  <section class="sec">
+    <div class="sec-head">
+      <div>
+        <div class="sec-sub">// recent · 最近阅读</div>
+        <div class="sec-title">文献<span class="em">工作台</span></div>
+      </div>
+      <a href="#" style="font-size:13px;color:var(--indigo);text-decoration:none;font-weight:500">查看全部 →</a>
+    </div>
+    <div class="papers">
+      <div class="paper">
+        <span class="pid">#017</span>
+        <div>
+          <h4>A Systematic Review of Prosocial Behavior and Wellbeing</h4>
+          <div class="meta"><span class="jrnl">J. Positive Psychology</span><span>2024</span><span>Hui et al.</span><span>3h ago</span></div>
+        </div>
+        <span class="conf"><span class="ddot"></span>已总结</span>
+      </div>
+      <div class="paper">
+        <span class="pid">#016</span>
+        <div>
+          <h4>Content and Thematic Analysis — A Practical Guide</h4>
+          <div class="meta"><span class="jrnl">Qualitative Research</span><span>2023</span><span>Braun & Clarke</span><span>1d ago</span></div>
+        </div>
+        <span class="conf"><span class="ddot"></span>已总结</span>
+      </div>
+      <div class="paper">
+        <span class="pid">#015</span>
+        <div>
+          <h4>Social Exchange Theory in Cross-Cultural Context</h4>
+          <div class="meta"><span class="jrnl">Annu. Rev. Anthropol.</span><span>Harumi Befu</span><span>2d ago</span></div>
+        </div>
+        <span class="conf"><span class="ddot"></span>已总结</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bento features -->
+  <section class="sec" style="padding-bottom:60px">
+    <div class="sec-head">
+      <div>
+        <div class="sec-sub">// capabilities</div>
+        <div class="sec-title">智能<span class="em">能力栈</span></div>
+      </div>
+    </div>
+    <div class="bento">
+      <div class="feat big">
+        <span class="tag mono">CORE</span>
+        <div class="ico">✦</div>
+        <h4>可追问的 AI 智能体</h4>
+        <p>就论文任意方法、数据、结论追问。AI 基于原文回答,并精确标注引用段落——像有一位随时在场的合作者。</p>
+        <div style="margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--indigo)">› 引用可追溯 · 跨论文关联</div>
+      </div>
+      <div class="feat">
+        <div class="ico">⇄</div>
+        <h4>段落级翻译</h4>
+        <p>难句对照,术语精度优先。</p>
+      </div>
+      <div class="feat">
+        <div class="ico">⊟</div>
+        <h4>结构化笔记</h4>
+        <p>方法 / 结论 / 贡献自动拆解。</p>
+      </div>
+      <div class="feat">
+        <div class="ico">⟲</div>
+        <h4>引用管理</h4>
+        <p>多格式导出,DOI 自动补全。</p>
+      </div>
+      <div class="feat">
+        <div class="ico">⊞</div>
+        <h4>语义检索</h4>
+        <p>跨全部文献的自然语言搜索。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Literature Finder · <span class="mono">built for research velocity</span>
+  </footer>
+</div>
+
+<script>
+  const stream = "本系统综述整合 62 项研究,显示亲社会行为与主观幸福感呈中等正相关(r ≈ .34),志愿者行为的效应比金钱捐赠更稳定。";
+  const el = document.getElementById('stream');
+  let i=0;
+  (function s(){ if(i<stream.length){ el.textContent=stream.slice(0,i); i++; setTimeout(s,34);} })();
+  const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){const t=+e.target.dataset.c;let c=0;const st=t/50;const iv=setInterval(()=>{c+=st;if(c>=t){c=t;clearInterval(iv);}e.target.textContent=Math.floor(c).toLocaleString();},20);obs.unobserve(e.target);}});});
+  document.querySelectorAll('[data-c]').forEach(x=>obs.observe(x));
+</script>
+</body>
+</html>
