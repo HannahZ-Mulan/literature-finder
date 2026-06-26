@@ -264,6 +264,59 @@ Respond in JSON format with these exact keys: research_question, methodology, ke
       throw error;
     }
   }
+
+  /**
+   * Send a custom chat completion request with full control over messages
+   * Useful when the caller has already constructed the prompt
+   */
+  async chat(
+    systemMessage: string,
+    userMessage: string,
+    options?: { temperature?: number; maxTokens?: number }
+  ): Promise<DeepSeekResponse> {
+    if (!this.apiKey) {
+      throw new Error('DeepSeek API key not configured');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: systemMessage },
+            { role: 'user', content: userMessage },
+          ],
+          temperature: options?.temperature ?? 0.7,
+          max_tokens: options?.maxTokens ?? 300,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(`DeepSeek API error: ${error.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content || '';
+
+      return {
+        content,
+        usage: {
+          prompt_tokens: data.usage?.prompt_tokens || 0,
+          completion_tokens: data.usage?.completion_tokens || 0,
+          total_tokens: data.usage?.total_tokens || 0,
+        },
+      };
+    } catch (error) {
+      console.error('[DeepSeek] Chat error:', error);
+      throw error;
+    }
+  }
 }
 
 // Singleton instance
