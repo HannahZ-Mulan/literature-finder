@@ -270,3 +270,15 @@ export const paperChunks = sqliteTable('paper_chunks', {
 
 export type PaperChunk = typeof paperChunks.$inferSelect;
 export type NewPaperChunk = typeof paperChunks.$inferInsert;
+
+// Chunk Embeddings - vector embeddings for semantic search (Zhipu embedding-3, 2048 dims)
+// Persisted so the in-memory index can rebuild on restart without re-calling the API.
+export const chunkEmbeddings = sqliteTable('chunk_embeddings', {
+  chunk_id: integer('chunk_id').primaryKey().references(() => paperChunks.id, { onDelete: 'cascade' }),
+  embedding: text('embedding').notNull(), // JSON-encoded 2048-dim float array
+  model: text('model').notNull().default('embedding-3'), // identifies which model produced this; supports re-embedding on model change
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+});
+
+export type ChunkEmbedding = typeof chunkEmbeddings.$inferSelect;
+export type NewChunkEmbedding = typeof chunkEmbeddings.$inferInsert;
