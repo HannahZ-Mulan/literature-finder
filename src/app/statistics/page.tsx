@@ -106,7 +106,7 @@ export default function StatisticsPage() {
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-center min-h-[600px]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
             <p className="text-gray-600">加载统计数据中...</p>
           </div>
         </div>
@@ -129,7 +129,7 @@ export default function StatisticsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-3">
-          <BarChart3 className="h-8 w-8 text-blue-600" />
+          <BarChart3 className="h-8 w-8 text-accent" />
           文献统计分析
         </h1>
         <p className="text-gray-600 mt-2">
@@ -162,7 +162,7 @@ export default function StatisticsPage() {
       {/* NEW: 可视化图表 */}
       <section>
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-blue-600" />
+          <TrendingUp className="h-5 w-5 text-accent" />
           数据可视化
         </h2>
         <StatisticsCharts statistics={statistics} />
@@ -235,7 +235,7 @@ export default function StatisticsPage() {
                 key={cat.categoryName}
                 className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center"
               >
-                <p className="text-2xl font-bold text-blue-600">{cat.count}</p>
+                <p className="text-2xl font-bold text-accent">{cat.count}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {cat.categoryName}
                 </p>
@@ -252,10 +252,10 @@ export default function StatisticsPage() {
             {statistics.topSearches.map((search) => (
               <span
                 key={search.query}
-                className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 rounded-full text-sm"
+                className="inline-flex items-center gap-2 px-3 py-1 bg-accent/10 text-accent rounded-full text-sm"
               >
                 <span>{search.query}</span>
-                <span className="bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded-full text-xs">
+                <span className="bg-accent/30 px-2 py-0.5 rounded-full text-xs">
                   {search.count}
                 </span>
               </span>

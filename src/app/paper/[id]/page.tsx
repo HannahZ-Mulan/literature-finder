@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowLeft, Sparkles, MessageSquare, FileText, Languages, FileOutput, CheckCircle2, AlertCircle, ExternalLink, BookOpen, FileText as FileIcon } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, MessageSquare, FileText, Languages, FileOutput, CheckCircle2, AlertCircle, ExternalLink, BookOpen, BookOpenCheck, RefreshCw, GraduationCap } from 'lucide-react';
 import { formatPDFText } from '@/lib/text-formatter';
 import { cleanMarkdown } from '@/lib/markdown-cleaner';
 import { useToast } from '@/hooks/use-toast';
@@ -62,6 +62,15 @@ interface CoreInsights {
   text_coverage: string;
 }
 
+interface ImmersiveReading {
+  chunkId: number;
+  chunkType: string;
+  chunkTypeLabel: string;
+  chunkText: string;
+  reading: string;
+  error?: boolean;
+}
+
 export default function PaperReaderPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -96,8 +105,13 @@ export default function PaperReaderPage() {
   // Full text expansion state
   const [isFullTextExpanded, setIsFullTextExpanded] = useState(false);
 
-  // PDF/Text view mode
-  const [viewMode, setViewMode] = useState<'text' | 'pdf'>('text');
+  // PDF/Text/Immersive view mode
+  const [viewMode, setViewMode] = useState<'text' | 'pdf' | 'immersive'>('text');
+
+  // Immersive Read states
+  const [immersiveReadings, setImmersiveReadings] = useState<ImmersiveReading[] | null>(null);
+  const [isGeneratingReadings, setIsGeneratingReadings] = useState(false);
+  const [readingsProgress, setReadingsProgress] = useState({ total: 0, completed: 0, failed: 0 });
 
   useEffect(() => {
     fetchPaper();
@@ -435,6 +449,98 @@ export default function PaperReaderPage() {
     router.push(`/paper/${id}/ppt`);
   };
 
+  const handleGenerateReadings = async (force = false) => {
+    setIsGeneratingReadings(true);
+    setReadingsProgress({ total: 0, completed: 0, failed: 0 });
+
+    try {
+      const response = await fetch(`/api/papers/${id}/immersive-read`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.retry) {
+          toast({
+            title: '正在生成中',
+            description: '请稍等片刻再试',
+          });
+        } else if (data.degraded) {
+          toast({
+            variant: 'destructive',
+            title: '深读生成失败',
+            description: data.message || 'AI 服务暂时不可用，请稍后重试',
+          });
+        } else {
+          throw new Error(data.error || 'Failed to generate immersive readings');
+        }
+        return;
+      }
+
+      setImmersiveReadings(data.readings);
+      setReadingsProgress({
+        total: data.progress?.total || 0,
+        completed: data.progress?.completed || 0,
+        failed: data.progress?.failed || 0,
+      });
+
+      if (data.cached) {
+        toast({
+          title: '深读已加载',
+          description: '使用上次生成的导读内容',
+        });
+      } else {
+        toast({
+          title: '深读生成完成',
+          description: `已生成 ${data.progress?.completed || 0} 段导读${data.progress?.failed ? `，${data.progress.failed} 段失败` : ''}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error generating immersive readings:', error);
+      toast({
+        variant: 'destructive',
+        title: '深读生成失败',
+        description: error instanceof Error ? error.message : 'Failed to generate immersive readings',
+      });
+    } finally {
+      setIsGeneratingReadings(false);
+    }
+  };
+
+  const handleRetryAllReadings = () => {
+    handleGenerateReadings(true);
+  };
+
+  const handleLoadCachedReadings = async () => {
+    try {
+      const response = await fetch(`/api/papers/${id}/immersive-read`);
+      const data = await response.json();
+
+      if (response.ok && data.readings && data.readings.length > 0) {
+        setImmersiveReadings(data.readings);
+        setViewMode('immersive');
+        return true;
+      }
+    } catch (error) {
+      console.error('Error loading cached readings:', error);
+    }
+    return false;
+  };
+
+  const handleSwitchToImmersive = async () => {
+    if (viewMode === 'immersive') return; // already in immersive mode
+    setViewMode('immersive');
+    // If no readings loaded yet and not already generating, try cache first
+    if (!immersiveReadings && !isGeneratingReadings) {
+      const hasCached = await handleLoadCachedReadings();
+      if (!hasCached) {
+        // Auto-generate
+        handleGenerateReadings();
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-16">
@@ -480,6 +586,24 @@ export default function PaperReaderPage() {
               </Button>
             )}
             <Button
+              onClick={handleSwitchToImmersive}
+              disabled={isGeneratingReadings}
+              variant={viewMode === 'immersive' ? 'default' : 'outline'}
+              className={`gap-2 ${viewMode === 'immersive' ? 'bg-sage-600 hover:bg-sage-700 text-white' : ''}`}
+            >
+              {isGeneratingReadings ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  生成中...
+                </>
+              ) : (
+                <>
+                  <BookOpenCheck className="w-4 h-4" />
+                  沉浸式深读
+                </>
+              )}
+            </Button>
+            <Button
               onClick={handleGeneratePPT}
               disabled={isGeneratingPPT}
               variant="outline"
@@ -502,37 +626,47 @@ export default function PaperReaderPage() {
       </div>
 
       {/* Two Column Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid gap-6 ${viewMode === 'immersive' ? 'grid-cols-1 max-w-5xl mx-auto' : 'grid-cols-1 lg:grid-cols-2'}`}>
         {/* Left Column: Full Text + Translation (Fixed) */}
         <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {viewMode === 'pdf' ? <BookOpen className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
-                  {viewMode === 'pdf' ? 'PDF预览' : '论文全文'}
+                  {viewMode === 'pdf' ? <BookOpen className="w-5 h-5" /> : viewMode === 'immersive' ? <GraduationCap className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                  {viewMode === 'pdf' ? 'PDF预览' : viewMode === 'immersive' ? '沉浸式深读' : '论文全文'}
                 </div>
                 <div className="flex items-center gap-2">
                   {/* View Mode Toggle */}
                   <Button
-                    variant="ghost"
+                    variant={viewMode === 'text' ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setViewMode(viewMode === 'text' ? 'pdf' : 'text')}
+                    onClick={() => setViewMode('text')}
                     className="text-xs"
                   >
-                    {viewMode === 'text' ? (
-                      <>
-                        <BookOpen className="w-4 h-4 mr-1" />
-                        PDF预览
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-4 h-4 mr-1" />
-                        文本模式
-                      </>
-                    )}
+                    <FileText className="w-4 h-4 mr-1" />
+                    文本模式
                   </Button>
-                  {viewMode === 'text' && (
+                  <Button
+                    variant={viewMode === 'pdf' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('pdf')}
+                    className="text-xs"
+                  >
+                    <BookOpen className="w-4 h-4 mr-1" />
+                    PDF预览
+                  </Button>
+                  <Button
+                    variant={viewMode === 'immersive' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={handleSwitchToImmersive}
+                    disabled={isGeneratingReadings}
+                    className="text-xs"
+                  >
+                    <GraduationCap className="w-4 h-4 mr-1" />
+                    沉浸式深读
+                  </Button>
+                  {(viewMode === 'text') && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -560,12 +694,139 @@ export default function PaperReaderPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {viewMode === 'pdf' ? (
+              {viewMode === 'immersive' ? (
+                /* ===== Immersive Read View ===== */
+                <div className="space-y-6">
+                  {isGeneratingReadings && !immersiveReadings ? (
+                    /* Loading state */
+                    <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                      <div className="relative">
+                        <GraduationCap className="w-12 h-12 text-sage-500" />
+                        <Loader2 className="w-6 h-6 text-sage-600 animate-spin absolute -bottom-1 -right-1" />
+                      </div>
+                      <div className="text-center space-y-2">
+                        <p className="text-sm font-medium text-foreground">正在生成导师导读...</p>
+                        <p className="text-xs text-muted-foreground">AI 正在逐段分析论文，生成中文讲解</p>
+                      </div>
+                    </div>
+                  ) : immersiveReadings && immersiveReadings.length > 0 ? (
+                    /* Render chunk cards with side-by-side layout */
+                    immersiveReadings.map((item, idx) => (
+                      <div key={item.chunkId} className="group">
+                        {/* Section header */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-sage-100 text-sage-700 dark:bg-sage-900/50 dark:text-sage-400 border border-sage-200 dark:border-sage-800">
+                            {item.chunkTypeLabel}
+                          </span>
+                          {item.error && (
+                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20">
+                              生成失败
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Side-by-side: original text + AI guide */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {/* Left: Original text */}
+                          <div className="p-4 bg-muted/40 rounded-lg border border-border text-sm leading-relaxed whitespace-pre-wrap break-words max-h-[50vh] overflow-y-auto"
+                            style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                          >
+                            {formatPDFText(item.chunkText)}
+                          </div>
+
+                          {/* Right: AI reading guide */}
+                          <div className={`p-4 rounded-lg border text-sm leading-relaxed ${
+                            item.error
+                              ? 'bg-destructive/5 border-destructive/20 text-muted-foreground'
+                              : 'bg-gradient-to-br from-sage-50 to-sage-100/50 dark:from-sage-900/30 dark:to-sage-900/10 border-sage-200 dark:border-sage-800'
+                          }`}>
+                            {item.error ? (
+                              <div className="flex items-start gap-2 text-destructive">
+                                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                <span>该段落导读生成失败</span>
+                              </div>
+                            ) : item.reading ? (
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1.5 text-sage-600 dark:text-sage-400 mb-2">
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                  <span className="text-xs font-medium">导师导读</span>
+                                </div>
+                                <p className="text-foreground/90">{item.reading}</p>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>生成中...</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Divider between chunks */}
+                        {idx < immersiveReadings.length - 1 && (
+                          <div className="mt-6 border-t border-border/50" />
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    /* Empty state: no readings yet */
+                    <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                      <GraduationCap className="w-12 h-12 text-muted-foreground/50" />
+                      <div className="text-center space-y-2">
+                        <p className="text-sm font-medium">尚未生成沉浸式深读</p>
+                        <p className="text-xs text-muted-foreground">点击下方按钮，AI 将逐段为你生成中文导读</p>
+                      </div>
+                      <Button
+                        onClick={() => handleGenerateReadings()}
+                        disabled={isGeneratingReadings}
+                        className="gap-2 bg-sage-600 hover:bg-sage-700 text-white"
+                      >
+                        {isGeneratingReadings ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            生成中...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            开始生成深读
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Actions bar when readings exist */}
+                  {immersiveReadings && immersiveReadings.length > 0 && !isGeneratingReadings && (
+                    <div className="flex items-center justify-center gap-3 pt-4 border-t border-border/50">
+                      <Button
+                        onClick={handleRetryAllReadings}
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        重新生成全部
+                      </Button>
+                      {readingsProgress.failed > 0 && (
+                        <span className="text-xs text-destructive">
+                          {readingsProgress.failed} 段失败
+                        </span>
+                      )}
+                      {readingsProgress.total > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          共 {readingsProgress.total} 段
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : viewMode === 'pdf' ? (
                 <PDFViewer url={`/uploads/${paper.fileName}`} title={paper.title} />
               ) : (
                 <>
                   <div
-                    className={`prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed p-4 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-text select-text transition-all duration-300 whitespace-pre-wrap break-words ${
+                    className={`prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed p-4 bg-muted/50 rounded-lg cursor-text select-text transition-all duration-300 whitespace-pre-wrap break-words ${
                       isFullTextExpanded ? 'max-h-[70vh] overflow-y-auto' : 'max-h-32 overflow-hidden relative'
                     }`}
                     style={{
@@ -583,22 +844,22 @@ export default function PaperReaderPage() {
                     {formatPDFText(paper.extractedText)}
 
                     {!isFullTextExpanded && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 dark:from-gray-900 to-transparent pt-8 pb-2 px-4">
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background to-transparent pt-8 pb-2 px-4">
                         <p className="text-xs text-muted-foreground text-center">点击"展开全文"查看完整内容</p>
                       </div>
                     )}
                   </div>
 
                   {selectedText && (
-                    <Card className="mt-4 border-blue-200 dark:border-blue-800">
+                    <Card className="mt-4 border-accent/30">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-sm flex items-center gap-2">
-                          <Languages className="w-4 h-4 text-blue-600" />
+                          <Languages className="w-4 h-4 text-accent" />
                           段落翻译
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm">
+                        <div className="p-3 bg-muted/50 rounded text-sm">
                           {selectedText.slice(0, 300)}
                           {selectedText.length > 300 && '...'}
                         </div>
@@ -623,18 +884,18 @@ export default function PaperReaderPage() {
                         </Button>
 
                         {translation && (
-                          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <div className="p-3 bg-accent/10 rounded-lg border border-accent/30">
                             <p className="text-sm font-medium mb-2">中文翻译：</p>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">{translation}</p>
+                            <p className="text-sm text-muted-foreground">{translation}</p>
                           </div>
                         )}
 
                         {explanation && explanation !== '暂无解释' && (
-                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                          <div className="p-3 bg-sage-50 dark:bg-sage-900/20 rounded-lg border border-sage-200 dark:border-sage-800">
                             <p className="text-sm font-medium mb-2 flex items-center gap-1">
                               💡 段落解释：
                             </p>
-                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{explanation}</p>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{explanation}</p>
                           </div>
                         )}
                       </CardContent>
@@ -646,14 +907,15 @@ export default function PaperReaderPage() {
           </Card>
         </div>
 
-        {/* Right Column: All AI Features (Scrollable with Sticky) */}
+        {/* Right Column: All AI Features (Scrollable with Sticky) — hidden in immersive mode */}
+        {viewMode !== 'immersive' && (
         <div className="sticky top-4 space-y-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
           {/* AI Core Insights */}
           {!coreInsights ? (
-            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 border-amber-200 dark:border-amber-800">
+            <Card className="bg-gradient-to-br from-sage-50 to-sage-100 dark:from-sage-900 dark:to-sage-900 border-sage-200 dark:border-sage-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <CardTitle className="flex items-center gap-2 font-serif">
+                  <Sparkles className="w-5 h-5 text-sage-500" />
                   生成AI核心解读
                 </CardTitle>
               </CardHeader>
@@ -684,18 +946,18 @@ export default function PaperReaderPage() {
           ) : (
             <div className="space-y-4">
               {/* One Sentence Summary */}
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+              <Card className="bg-gradient-to-br from-sage-50 to-sage-100 dark:from-sage-900 dark:to-sage-900 border-sage-200 dark:border-sage-800">
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-3 mb-4">
                     <span className="text-3xl">🧠</span>
                     <div className="flex-1">
-                      <h3 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2">
+                      <h3 className="text-xs font-semibold text-sage-600 dark:text-sage-400 uppercase tracking-wide mb-2">
                         一句话总结
                       </h3>
-                      <p className="text-base font-medium leading-relaxed text-gray-900 dark:text-gray-100">
+                      <p className="text-base font-medium leading-relaxed text-foreground">
                         {coreInsights.one_sentence_summary}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      <p className="text-xs text-muted-foreground/70 mt-2">
                         📍 来源: {coreInsights.one_sentence_summary_location}
                       </p>
                     </div>
@@ -705,18 +967,18 @@ export default function PaperReaderPage() {
 
               {/* Research Question */}
               {coreInsights.research_question && (
-                <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <Card className="bg-card border-border">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-3">
                       <span className="text-2xl">❓</span>
                       <div className="flex-1">
-                        <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                           研究问题
                         </h3>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
                           {coreInsights.research_question}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <p className="text-xs text-muted-foreground/70 mt-2">
                           📍 来源: {coreInsights.research_question_location}
                         </p>
                       </div>
@@ -727,18 +989,18 @@ export default function PaperReaderPage() {
 
               {/* Methods */}
               {coreInsights.methods && (
-                <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <Card className="bg-card border-border">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-3">
                       <span className="text-2xl">🔬</span>
                       <div className="flex-1">
-                        <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                           研究方法
                         </h3>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
                           {coreInsights.methods}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <p className="text-xs text-muted-foreground/70 mt-2">
                           📍 来源: {coreInsights.methods_location}
                         </p>
                       </div>
@@ -748,25 +1010,25 @@ export default function PaperReaderPage() {
               )}
 
               {/* Key Findings */}
-              <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <Card className="bg-card border-border">
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-3 mb-4">
                     <span className="text-2xl">🎯</span>
                     <div className="flex-1">
-                      <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                         核心发现
                       </h3>
                       <div className="space-y-3">
                         {coreInsights.key_findings.map((item, idx) => (
                           <div key={idx} className="flex gap-3">
-                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-sage-100 dark:bg-sage-900 text-sage-600 dark:text-sage-400 flex items-center justify-center text-xs font-bold">
                               {idx + 1}
                             </span>
                             <div className="flex-1">
-                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                              <p className="text-sm text-muted-foreground leading-relaxed">
                                 {item.finding}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              <p className="text-xs text-muted-foreground/70 mt-1">
                                 📍 来源: {item.location}
                               </p>
                             </div>
@@ -780,23 +1042,23 @@ export default function PaperReaderPage() {
 
               {/* Contributions */}
               {coreInsights.contributions && coreInsights.contributions.length > 0 && (
-                <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <Card className="bg-card border-border">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-3">
                       <span className="text-2xl">🌟</span>
                       <div className="flex-1">
-                        <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                           主要贡献
                         </h3>
                         <div className="space-y-2">
                           {coreInsights.contributions.map((item, idx) => (
                             <div key={idx} className="flex gap-2">
-                              <span className="flex-shrink-0 text-blue-500">✓</span>
+                              <span className="flex-shrink-0 text-sage-500">✓</span>
                               <div className="flex-1">
-                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                <p className="text-sm text-muted-foreground leading-relaxed">
                                   {item.contribution}
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <p className="text-xs text-muted-foreground/70 mt-1">
                                   📍 来源: {item.location}
                                 </p>
                               </div>
@@ -811,23 +1073,23 @@ export default function PaperReaderPage() {
 
               {/* Limitations */}
               {coreInsights.limitations && coreInsights.limitations.length > 0 && (
-                <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <Card className="bg-card border-border">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-3">
                       <span className="text-2xl">⚠️</span>
                       <div className="flex-1">
-                        <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                           局限性
                         </h3>
                         <div className="space-y-2">
                           {coreInsights.limitations.map((item, idx) => (
                             <div key={idx} className="flex gap-2">
-                              <span className="flex-shrink-0 text-orange-500">!</span>
+                              <span className="flex-shrink-0 text-clay-500">!</span>
                               <div className="flex-1">
-                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                <p className="text-sm text-muted-foreground leading-relaxed">
                                   {item.limitation}
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <p className="text-xs text-muted-foreground/70 mt-1">
                                   📍 来源: {item.location}
                                 </p>
                               </div>
@@ -842,30 +1104,30 @@ export default function PaperReaderPage() {
 
               {/* Quality Assessment */}
               {coreInsights.quality_assessment && (
-                <Card className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 dark:border-purple-800">
+                <Card className="bg-gradient-to-br from-clay-50 to-clay-100 dark:from-clay-900 dark:to-clay-900 border-clay-200 dark:border-clay-800">
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-3">
                       <span className="text-2xl">⚖️</span>
                       <div className="flex-1">
-                        <h3 className="text-xs font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wide mb-2">
+                        <h3 className="text-xs font-semibold text-clay-700 dark:text-clay-400 uppercase tracking-wide mb-2">
                           研究质量判断
                         </h3>
                         <div className="flex items-center gap-2 mb-2">
                           <span className={`px-2 py-1 rounded text-xs font-semibold ${
                             coreInsights.quality_assessment.level === 'high'
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                              ? 'bg-sage-100 text-sage-700 dark:bg-sage-900 dark:text-sage-300'
                               : coreInsights.quality_assessment.level === 'medium'
-                              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                              : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                              ? 'bg-accent/20 text-accent'
+                              : 'bg-destructive/20 text-destructive'
                           }`}>
                             {coreInsights.quality_assessment.level === 'high' ? '高质量' :
                              coreInsights.quality_assessment.level === 'medium' ? '中等质量' : '低质量'}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
                           {coreInsights.quality_assessment.reason}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <p className="text-xs text-muted-foreground/70 mt-2">
                           📍 来源: {coreInsights.quality_assessment.location}
                         </p>
                       </div>
@@ -876,15 +1138,15 @@ export default function PaperReaderPage() {
 
               {/* Text Coverage */}
               {coreInsights.text_coverage && (
-                <Card className="bg-white dark:bg-gray-900 border-blue-200 dark:border-blue-800">
+                <Card className="bg-card border-border">
                   <CardContent className="pt-4">
                     <div className="flex items-start gap-2">
                       <span className="text-xl">📄</span>
                       <div className="flex-1">
-                        <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                           AI分析覆盖范围
                         </h3>
-                        <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
                           {coreInsights.text_coverage}
                         </p>
                       </div>
@@ -894,7 +1156,7 @@ export default function PaperReaderPage() {
               )}
 
               {/* Practical Value */}
-              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+              <Card className="bg-gradient-to-br from-sage-50 to-sage-100 dark:from-sage-900 dark:to-sage-900 border-sage-200 dark:border-sage-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <span className="text-xl">💡</span>
@@ -903,34 +1165,34 @@ export default function PaperReaderPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* For Researchers */}
-                  <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
-                    <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
+                  <div className="p-4 bg-card rounded-lg">
+                    <h4 className="text-sm font-semibold text-sage-700 dark:text-sage-400 mb-2 flex items-center gap-2">
                       <span>🔬</span>
                       对研究人员
                     </h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                       {coreInsights.applications.researcher}
                     </p>
                   </div>
 
                   {/* For Clinicians */}
-                  <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
-                    <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
+                  <div className="p-4 bg-card rounded-lg">
+                    <h4 className="text-sm font-semibold text-sage-700 dark:text-sage-400 mb-2 flex items-center gap-2">
                       <span>🏥</span>
                       对临床医生
                     </h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                       {coreInsights.applications.clinician}
                     </p>
                   </div>
 
                   {/* For Policy Makers */}
-                  <div className="p-4 bg-white dark:bg-gray-900 rounded-lg">
-                    <h4 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-2">
+                  <div className="p-4 bg-card rounded-lg">
+                    <h4 className="text-sm font-semibold text-sage-700 dark:text-sage-400 mb-2 flex items-center gap-2">
                       <span>📋</span>
                       对政策制定者
                     </h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                       {coreInsights.applications.policy_maker}
                     </p>
                   </div>
@@ -940,11 +1202,11 @@ export default function PaperReaderPage() {
           )}
 
           {/* AI Chat */}
-          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+          <Card className="bg-gradient-to-br from-sage-50 to-sage-100 dark:from-sage-900 dark:to-sage-900 border-sage-200 dark:border-sage-800">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <MessageSquare className="w-5 h-5 text-sage-500 dark:text-sage-400" />
                   AI 对话助手
                 </div>
                 <div className="flex items-center gap-2">
@@ -953,7 +1215,7 @@ export default function PaperReaderPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowRecommendedQuestions(true)}
-                      className="text-xs text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950"
+                      className="text-xs text-sage-500 hover:text-sage-700 hover:bg-sage-50 dark:text-sage-400 dark:hover:bg-sage-950"
                     >
                       <Sparkles className="w-3 h-3 mr-1" />
                       返回推荐问题
@@ -975,7 +1237,7 @@ export default function PaperReaderPage() {
             <CardContent className="space-y-4">
               {!showChat ? (
                 <div className="text-center py-6">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50 text-green-600" />
+                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50 text-sage-500" />
                   <p className="text-sm text-muted-foreground mb-4">
                     向 AI 提问关于这篇论文的问题
                   </p>
@@ -987,20 +1249,20 @@ export default function PaperReaderPage() {
                 <div className="space-y-4">
                   {/* 提示信息：告知用户可以切换 */}
                   {chatHistory.length > 0 && !showRecommendedQuestions && (
-                    <div className="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                      <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+                    <div className="bg-sage-100 dark:bg-sage-900/30 border border-sage-200 dark:border-sage-800 rounded-lg p-3">
+                      <div className="flex items-center gap-2 text-sm text-sage-700 dark:text-sage-400">
                         <Sparkles className="w-4 h-4" />
                         <span>点击右上角的"返回推荐问题"按钮查看其他问题</span>
                       </div>
                     </div>
                   )}
 
-                  <div className="bg-white dark:bg-gray-900 rounded-lg border border-green-200 dark:border-green-800 p-4 max-h-80 overflow-y-auto space-y-3">
+                  <div className="bg-card rounded-lg border border-sage-200 dark:border-sage-800 p-4 max-h-80 overflow-y-auto space-y-3">
                     {showRecommendedQuestions || chatHistory.length === 0 ? (
                       <div className="space-y-3">
                         {isLoadingQuestions ? (
                           <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-5 h-5 animate-spin text-green-600 mr-2" />
+                            <Loader2 className="w-5 h-5 animate-spin text-sage-500 mr-2" />
                             <span className="text-sm text-muted-foreground">加载推荐问题...</span>
                           </div>
                         ) : recommendedQuestions.length > 0 ? (
@@ -1010,7 +1272,7 @@ export default function PaperReaderPage() {
                                 💡 点击问题继续提问，或点击右上角返回对话历史
                               </p>
                             )}
-                            <p className="text-sm font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                            <p className="text-sm font-medium text-sage-700 dark:text-sage-400 mb-3 flex items-center gap-2">
                               <Sparkles className="w-4 h-4" />
                               推荐问题（点击即可提问）
                             </p>
@@ -1018,9 +1280,9 @@ export default function PaperReaderPage() {
                               <button
                                 key={idx}
                                 onClick={() => handleQuestionClick(question)}
-                                className="w-full text-left p-3 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-950 transition-colors text-sm"
+                                className="w-full text-left p-3 rounded-lg border border-sage-200 dark:border-sage-800 hover:bg-sage-50 dark:hover:bg-sage-950 transition-colors text-sm"
                               >
-                                <span className="font-medium text-green-700 dark:text-green-400 mr-2">{idx + 1}.</span>
+                                <span className="font-medium text-sage-700 dark:text-sage-400 mr-2">{idx + 1}.</span>
                                 {question}
                               </button>
                             ))}
@@ -1033,14 +1295,14 @@ export default function PaperReaderPage() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-700">
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center justify-between pb-2 border-b border-border">
+                          <span className="text-xs font-medium text-muted-foreground/70">
                             对话历史
                           </span>
                           {chatHistory.length > 0 && (
                             <button
                               onClick={() => setShowRecommendedQuestions(true)}
-                              className="text-xs text-green-600 hover:text-green-700 dark:text-green-400 flex items-center gap-1"
+                              className="text-xs text-sage-500 hover:text-sage-700 dark:text-sage-400 flex items-center gap-1"
                             >
                               <Sparkles className="w-3 h-3" />
                               查看推荐问题
@@ -1051,8 +1313,8 @@ export default function PaperReaderPage() {
                           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[80%] rounded-lg p-3 ${
                               msg.role === 'user'
-                                ? 'bg-green-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                                ? 'bg-sage-600 text-white'
+                                : 'bg-secondary text-secondary-foreground'
                             }`}>
                               <p className="text-sm whitespace-pre-wrap">
                                 {msg.role === 'assistant' ? cleanMarkdown(msg.content) : msg.content}
@@ -1064,8 +1326,8 @@ export default function PaperReaderPage() {
                     )}
                     {isChatting && (
                       <div className="flex justify-start">
-                        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
-                          <Loader2 className="w-4 h-4 animate-spin text-green-600" />
+                        <div className="bg-secondary rounded-lg p-3">
+                          <Loader2 className="w-4 h-4 animate-spin text-sage-500" />
                         </div>
                       </div>
                     )}
@@ -1079,7 +1341,7 @@ export default function PaperReaderPage() {
                       onKeyPress={(e) => e.key === 'Enter' && !isChatting && handleChat()}
                       placeholder="输入你的问题..."
                       disabled={isChatting}
-                      className="flex-1 px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-card focus:outline-none focus:ring-2 focus:ring-sage-500"
                     />
                     <Button
                       onClick={handleChat}
@@ -1100,7 +1362,7 @@ export default function PaperReaderPage() {
           {coreInsights && (
             <details className="group">
               <summary className="cursor-pointer">
-                <Card className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <Card className="bg-muted/50 border-border hover:bg-secondary transition-colors">
                   <CardHeader className="py-3">
                     <CardTitle className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
@@ -1114,7 +1376,7 @@ export default function PaperReaderPage() {
                   </CardHeader>
                 </Card>
               </summary>
-              <Card className="mt-2 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <Card className="mt-2 bg-card border-border">
                 <CardContent className="pt-6">
                   <div className="space-y-4">
                     <Button
@@ -1126,6 +1388,29 @@ export default function PaperReaderPage() {
                     >
                       {isGeneratingSummary ? '生成中...' : (chineseSummary ? '重新生成摘要' : '生成结构化摘要')}
                     </Button>
+                    <Button
+                      onClick={handleGenerateHumanSummary}
+                      disabled={isGeneratingHumanSummary}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      {isGeneratingHumanSummary ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />生成中...</>
+                      ) : (
+                        humanChineseSummary ? '重新生成人性化解读' : '生成人性化中文解读'
+                      )}
+                    </Button>
+                    {humanChineseSummary && (
+                      <div className="mt-4 p-4 bg-sage-50 dark:bg-sage-900/20 rounded-lg border border-sage-200 dark:border-sage-800">
+                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <span>📖</span> 人性化中文解读
+                        </h4>
+                        <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                          {humanChineseSummary}
+                        </div>
+                      </div>
+                    )}
                     {chineseSummary && (
                       <div className="space-y-4 mt-4">
                         <div>
@@ -1160,6 +1445,7 @@ export default function PaperReaderPage() {
             </details>
           )}
         </div>
+        )}
       </div>
     </div>
   );

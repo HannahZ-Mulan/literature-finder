@@ -151,17 +151,17 @@ export default function DemoPaperPage() {
 
       <div className="grid gap-6">
         {/* AI Summary Panel */}
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+        <Card className="bg-gradient-to-br from-sage-50 to-sage-100 dark:from-sage-900 dark:to-sage-900 border-sage-200 dark:border-sage-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <Sparkles className="w-5 h-5 text-sage-600 dark:text-sage-400" />
               AI Summary
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {!summary ? (
               <div className="text-center py-6">
-                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-50 text-blue-600" />
+                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-50 text-sage-600" />
                 <p className="text-sm text-muted-foreground mb-4">
                   Get an AI-powered summary of this paper
                 </p>
@@ -185,23 +185,23 @@ export default function DemoPaperPage() {
             ) : (
               <div className="bg-white dark:bg-gray-900 p-4 rounded-lg space-y-4">
                 <div>
-                  <h4 className="font-medium text-sm mb-2 text-blue-700 dark:text-blue-300">🔍 Research Question</h4>
+                  <h4 className="font-medium text-sm mb-2 text-sage-700 dark:text-sage-300">🔍 Research Question</h4>
                   <p className="text-sm text-muted-foreground">{summary.research_question}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm mb-2 text-blue-700 dark:text-blue-300">⚙️ Method</h4>
+                  <h4 className="font-medium text-sm mb-2 text-sage-700 dark:text-sage-300">⚙️ Method</h4>
                   <p className="text-sm text-muted-foreground">{summary.method}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm mb-2 text-blue-700 dark:text-blue-300">🎯 Key Findings</h4>
+                  <h4 className="font-medium text-sm mb-2 text-sage-700 dark:text-sage-300">🎯 Key Findings</h4>
                   <p className="text-sm text-muted-foreground">{summary.key_findings}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm mb-2 text-blue-700 dark:text-blue-300">💡 Contribution</h4>
+                  <h4 className="font-medium text-sm mb-2 text-sage-700 dark:text-sage-300">💡 Contribution</h4>
                   <p className="text-sm text-muted-foreground">{summary.contribution}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm mb-2 text-blue-700 dark:text-blue-300">⚠️ Limitations</h4>
+                  <h4 className="font-medium text-sm mb-2 text-sage-700 dark:text-sage-300">⚠️ Limitations</h4>
                   <p className="text-sm text-muted-foreground">{summary.limitations}</p>
                 </div>
               </div>
@@ -210,17 +210,17 @@ export default function DemoPaperPage() {
         </Card>
 
         {/* Chat with Paper Panel */}
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+        <Card className="bg-gradient-to-br from-sage-50 to-sage-100 dark:from-sage-900 dark:to-sage-900 border-sage-200 dark:border-sage-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <MessageSquare className="w-5 h-5 text-sage-600 dark:text-sage-400" />
               Chat with Paper
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {!showChat ? (
               <div className="text-center py-6">
-                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50 text-green-600" />
+                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50 text-sage-600" />
                 <p className="text-sm text-muted-foreground mb-4">
                   Ask questions about this paper
                 </p>
@@ -230,7 +230,7 @@ export default function DemoPaperPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="bg-white dark:bg-gray-900 rounded-lg border border-green-200 dark:border-green-800 p-4 max-h-96 overflow-y-auto space-y-3">
+                <div className="bg-white dark:bg-gray-900 rounded-lg border border-sage-200 dark:border-sage-800 p-4 max-h-96 overflow-y-auto space-y-3">
                   {chatHistory.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       Ask a question! For example: "What is the main contribution of this paper?"
@@ -240,8 +240,8 @@ export default function DemoPaperPage() {
                       <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] rounded-lg p-3 ${
                           msg.role === 'user'
-                            ? 'bg-green-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-secondary text-secondary-foreground'
                         }`}>
                           <p className="text-sm">{msg.content}</p>
                         </div>
@@ -251,7 +251,7 @@ export default function DemoPaperPage() {
                   {isChatting && (
                     <div className="flex justify-start">
                       <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
-                        <Loader2 className="w-4 h-4 animate-spin text-green-600" />
+                        <Loader2 className="w-4 h-4 animate-spin text-sage-600" />
                       </div>
                     </div>
                   )}
@@ -265,7 +265,7 @@ export default function DemoPaperPage() {
                     onKeyPress={(e) => e.key === 'Enter' && !isChatting && handleChat()}
                     placeholder="Ask a question about this paper..."
                     disabled={isChatting}
-                    className="flex-1 px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-card focus:outline-none focus:ring-2 focus:ring-accent"
                   />
                   <Button
                     onClick={handleChat}

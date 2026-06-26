@@ -51,9 +51,9 @@ interface ReadingListDetail {
 
 const priorityConfig = {
   urgent: { label: '紧急', color: 'bg-red-500 text-white' },
-  high: { label: '高', color: 'bg-orange-500 text-white' },
+  high: { label: '高', color: 'bg-clay-500 text-white' },
   medium: { label: '中', color: 'bg-yellow-500 text-white' },
-  low: { label: '低', color: 'bg-green-500 text-white' },
+  low: { label: '低', color: 'bg-sage-500 text-white' },
 };
 
 export default function ReadingListDetailPage({
@@ -359,9 +359,9 @@ export default function ReadingListDetailPage({
       case 'unread':
         return <Badge variant="outline">未读</Badge>;
       case 'reading':
-        return <Badge className="bg-blue-500 text-white">阅读中</Badge>;
+        return <Badge className="bg-sage-500 text-white">阅读中</Badge>;
       case 'read':
-        return <Badge className="bg-green-500 text-white">已读</Badge>;
+        return <Badge className="bg-sage-500 text-white">已读</Badge>;
       default:
         return null;
     }
@@ -449,11 +449,11 @@ export default function ReadingListDetailPage({
 
         {/* Success/Error Messages */}
         {successMessage && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg flex items-center justify-between">
+          <div className="bg-sage-50 dark:bg-sage-900/30 border border-sage-200 dark:border-sage-800 text-sage-800 dark:text-sage-200 px-4 py-3 rounded-lg flex items-center justify-between">
             <span className="text-sm">{successMessage}</span>
             <button
               onClick={() => setSuccessMessage('')}
-              className="text-green-600 hover:text-green-800"
+              className="text-sage-600 hover:text-green-800"
             >
               <X className="w-4 h-4" />
             </button>
@@ -474,12 +474,12 @@ export default function ReadingListDetailPage({
 
         {/* Batch Operations Toolbar */}
         {selectedIds.size > 0 && (
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="bg-sage-50 dark:bg-blue-950/20 border border-sage-200 dark:border-blue-800 rounded-lg p-4">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-2">
-                <CheckSquare className="w-5 h-5 text-blue-600" />
+                <CheckSquare className="w-5 h-5 text-sage-600" />
                 <span className="font-medium">
-                  已选择 <span className="text-blue-600">{selectedIds.size}</span> 篇文献
+                  已选择 <span className="text-sage-600">{selectedIds.size}</span> 篇文献
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -567,7 +567,7 @@ export default function ReadingListDetailPage({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowBatchEdit(true)}
-                className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                className="border-clay-200 text-clay-700 hover:bg-clay-50"
               >
                 <Edit2 className="w-4 h-4 mr-2" />
                 批量设置
@@ -589,8 +589,8 @@ export default function ReadingListDetailPage({
                           onClick={() => setBatchPriority(batchPriority === p ? '' : p as any)}
                           className={`px-3 py-1 rounded text-sm border transition-colors ${
                             batchPriority === p
-                              ? 'bg-purple-500 text-white border-purple-500'
-                              : 'hover:bg-purple-50'
+                              ? 'bg-clay-500 text-clay-50 border-clay-500'
+                              : 'hover:bg-clay-50'
                           }`}
                         >
                           {priorityConfig[p].label}
@@ -616,7 +616,7 @@ export default function ReadingListDetailPage({
                       size="sm"
                       onClick={handleBatchUpdate}
                       disabled={isBatchUpdating || (!batchPriority && !batchDueDate)}
-                      className="bg-purple-600 hover:bg-purple-700"
+                      className="bg-clay-600 hover:bg-clay-700 text-clay-50"
                     >
                       {isBatchUpdating ? (
                         <>
@@ -760,7 +760,7 @@ export default function ReadingListDetailPage({
                             className="h-7 px-2"
                             onClick={() => handleSaveDueDate(literature.item_id)}
                           >
-                            <Check className="w-3 h-3 text-green-600" />
+                            <Check className="w-3 h-3 text-sage-600" />
                           </Button>
                           <Button
                             variant="ghost"

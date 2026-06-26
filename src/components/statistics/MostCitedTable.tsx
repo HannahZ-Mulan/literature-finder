@@ -38,24 +38,24 @@ export function MostCitedTable({ papers }: MostCitedTableProps) {
           <div className="flex-shrink-0">
             {index < 3 ? (
               <Trophy className={`h-6 w-6 ${
-                index === 0 ? 'text-yellow-500' :
-                index === 1 ? 'text-gray-400' :
-                'text-orange-600'
+                index === 0 ? 'text-accent' :
+                index === 1 ? 'text-muted-foreground/70' :
+                'text-clay-600'
               }`} />
             ) : (
-              <span className="text-lg font-bold text-gray-400">#{index + 1}</span>
+              <span className="text-lg font-bold text-muted-foreground/70">#{index + 1}</span>
             )}
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-sm line-clamp-2">{paper.title}</h4>
-            <p className="text-xs text-gray-500 mt-1">{parseAuthors(paper.authors)}</p>
+            <p className="text-xs text-muted-foreground mt-1">{parseAuthors(paper.authors)}</p>
           </div>
           <div className="flex-shrink-0">
             <div className="text-right">
-              <span className="text-2xl font-bold text-blue-600">
+              <span className="text-2xl font-bold text-accent">
                 {paper.citationCount}
               </span>
-              <p className="text-xs text-gray-500">引用</p>
+              <p className="text-xs text-muted-foreground">引用</p>
             </div>
           </div>
         </div>

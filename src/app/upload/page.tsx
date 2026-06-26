@@ -139,7 +139,7 @@ export default function UploadPage() {
             setStatus('Text extraction complete! Redirecting...');
 
             setTimeout(() => {
-              router.push(`/my-papers`);
+              router.push(`/paper/${id}`);
             }, 1500);
           }
         }
@@ -157,20 +157,32 @@ export default function UploadPage() {
       if (isParsing) {
         setIsParsing(false);
         setError('Extraction timeout. You can still view the paper.');
-        setTimeout(() => router.push(`/my-papers`), 2000);
+        setTimeout(() => router.push(`/paper/${id}`), 2000);
       }
     }, 5 * 60 * 1000);
   }, [router, isParsing]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundImage:
+          'radial-gradient(900px 500px at 50% -10%, hsl(45 80% 85% / 0.45) 0%, transparent 55%)',
+      }}
+    >
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
-            <Upload className="w-8 h-8 text-white" />
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+            style={{
+              background:
+                'linear-gradient(135deg, hsl(40 76% 40%), hsl(28 52% 42%))',
+            }}
+          >
+            <Upload className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
+          <h1 className="font-serif text-4xl font-medium mb-3">
             上传研究论文
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
@@ -178,11 +190,11 @@ export default function UploadPage() {
           </p>
         </div>
 
-        <Card className="border-0 shadow-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        <Card className="border shadow-2xl bg-card/80 backdrop-blur-sm">
           <CardHeader className="border-b pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" />
+              <CardTitle className="flex items-center gap-2 font-serif">
+                <FileText className="w-5 h-5 text-accent" />
                 上传论文
               </CardTitle>
               <Button
@@ -243,7 +255,7 @@ export default function UploadPage() {
               <div className="space-y-3">
                 <label className="block text-sm font-medium">PDF文件</label>
                 <div
-                  className="border-2 border-dashed rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
+                  className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-accent hover:bg-accent/5 transition-colors cursor-pointer"
                   onClick={() => document.querySelector('input[type="file"]')?.click()}
                 >
                   <input
@@ -255,8 +267,8 @@ export default function UploadPage() {
                   />
                   {!file ? (
                     <div className="space-y-3">
-                      <div className="w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                        <Upload className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                      <div className="w-16 h-16 mx-auto bg-accent/10 rounded-full flex items-center justify-center">
+                        <Upload className="w-8 h-8 text-accent" />
                       </div>
                       <div>
                         <p className="font-medium">点击上传PDF文件</p>
@@ -266,7 +278,7 @@ export default function UploadPage() {
                   ) : (
                     <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <FileText className="w-8 h-8 text-blue-600" />
+                        <FileText className="w-8 h-8 text-accent" />
                         <div>
                           <p className="font-medium">{file.name}</p>
                           <p className="text-sm text-muted-foreground">
@@ -309,30 +321,30 @@ export default function UploadPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-xl flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-red-800 dark:text-red-200">上传失败</p>
-                  <p className="text-sm text-red-600 dark:text-red-300 mt-1">{error}</p>
+                  <p className="font-medium text-destructive">上传失败</p>
+                  <p className="text-sm text-destructive/80 mt-1">{error}</p>
                 </div>
               </div>
             )}
 
             {/* Upload Progress */}
             {isUploading && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                    <span className="font-medium text-blue-900 dark:text-blue-100">正在上传...</span>
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    <span className="font-medium text-primary">正在上传...</span>
                   </div>
-                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  <span className="text-sm font-medium text-primary/80">
                     {uploadProgress}%
                   </span>
                 </div>
-                <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
@@ -341,12 +353,12 @@ export default function UploadPage() {
 
             {/* Parsing Progress */}
             {isParsing && (
-              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl">
+              <div className="p-4 bg-accent/10 border border-accent/30 rounded-xl">
                 <div className="flex items-center gap-3">
-                  <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                  <Loader2 className="w-5 h-5 animate-spin text-accent" />
                   <div className="flex-1">
-                    <p className="font-medium text-purple-900 dark:text-purple-100">正在提取文本...</p>
-                    {status && <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">{status}</p>}
+                    <p className="font-medium text-accent">正在提取文本...</p>
+                    {status && <p className="text-sm text-accent/80 mt-1">{status}</p>}
                   </div>
                 </div>
               </div>
@@ -354,10 +366,10 @@ export default function UploadPage() {
 
             {/* Success Message */}
             {!isParsing && !isUploading && status && (
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+              <div className="p-4 bg-sage-50 border border-sage-200 rounded-xl flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-sage-500 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="font-medium text-green-900 dark:text-green-100 text-green-700 dark:text-green-300">{status}</p>
+                  <p className="font-medium text-sage-700">{status}</p>
                 </div>
               </div>
             )}
@@ -366,7 +378,7 @@ export default function UploadPage() {
             <Button
               onClick={handleUpload}
               disabled={(!file && !text) || isUploading || isParsing}
-              className="w-full h-14 text-lg font-medium bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              className="w-full h-14 text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90"
               size="lg"
             >
               {isUploading ? (

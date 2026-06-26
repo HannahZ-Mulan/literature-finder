@@ -71,10 +71,10 @@ interface InsightsDashboardProps {
 }
 
 const priorityColors = {
-  urgent: 'bg-red-500',
-  high: 'bg-orange-500',
-  medium: 'bg-yellow-500',
-  low: 'bg-green-500',
+  urgent: 'bg-destructive',
+  high: 'bg-clay-500',
+  medium: 'bg-accent',
+  low: 'bg-sage-500',
 };
 
 const priorityLabels = {
@@ -97,17 +97,17 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
   };
 
   const getProgressColor = (percentage: number) => {
-    if (percentage >= 100) return 'bg-green-500';
-    if (percentage >= 75) return 'bg-blue-500';
-    if (percentage >= 50) return 'bg-yellow-500';
-    return 'bg-orange-500';
+    if (percentage >= 100) return 'bg-sage-500';
+    if (percentage >= 75) return 'bg-accent';
+    if (percentage >= 50) return 'bg-clay-400';
+    return 'bg-destructive';
   };
 
   const getProgressStatus = (percentage: number) => {
-    if (percentage >= 100) return { text: '已完成', color: 'text-green-600' };
-    if (percentage >= 75) return { text: '进展良好', color: 'text-blue-600' };
-    if (percentage >= 50) return { text: '继续加油', color: 'text-yellow-600' };
-    return { text: '需加快进度', color: 'text-orange-600' };
+    if (percentage >= 100) return { text: '已完成', color: 'text-sage-600' };
+    if (percentage >= 75) return { text: '进展良好', color: 'text-accent' };
+    if (percentage >= 50) return { text: '继续加油', color: 'text-clay-500' };
+    return { text: '需加快进度', color: 'text-destructive' };
   };
 
   return (
@@ -115,16 +115,16 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
       {/* 今日待办 & 逾期提醒 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 今日待办 */}
-        <Card className="border-blue-200 dark:border-blue-800">
-          <CardHeader className="bg-blue-50 dark:bg-blue-950">
-            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+        <Card className="border-accent/30">
+          <CardHeader className="bg-accent/10">
+            <CardTitle className="flex items-center gap-2 text-accent">
               <Calendar className="h-5 w-5" />
               今日待办 ({insights.todayTasks.count})
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             {insights.todayTasks.count === 0 ? (
-              <p className="text-center text-gray-500 py-8">今天没有待办任务 🎉</p>
+              <p className="text-center text-muted-foreground py-8">今天没有待办任务 🎉</p>
             ) : (
               <div className="space-y-3">
                 {insights.todayTasks.items.slice(0, 5).map((item) => (
@@ -136,7 +136,7 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
                     <div className={`w-2 h-2 rounded-full mt-2 ${priorityColors[item.priority as keyof typeof priorityColors]}`} />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm line-clamp-2">{item.title}</p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {item.authors.slice(0, 2).join(', ')}
                         {item.authors.length > 2 && ' 等'}
                       </p>
@@ -144,7 +144,7 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
                         <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600">
                           {priorityLabels[item.priority as keyof typeof priorityLabels]}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           {formatDate(item.due_date)}
                         </span>
                       </div>
@@ -194,13 +194,13 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4 text-purple-500" />
+              <Clock className="h-4 w-4 text-clay-500" />
               本周待完成
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-purple-600">{insights.weekTasks}</p>
-            <p className="text-xs text-gray-500 mt-1">篇文献</p>
+            <p className="text-3xl font-bold text-clay-600">{insights.weekTasks}</p>
+            <p className="text-xs text-muted-foreground mt-1">篇文献</p>
           </CardContent>
         </Card>
 
@@ -208,13 +208,13 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-blue-500" />
+              <TrendingUp className="h-4 w-4 text-accent" />
               预计阅读时长
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-blue-600">{insights.readingTime.totalEstimatedHours}</p>
-            <p className="text-xs text-gray-500 mt-1">小时 ({insights.readingTime.itemsTracked} 篇已设置)</p>
+            <p className="text-3xl font-bold text-accent">{insights.readingTime.totalEstimatedHours}</p>
+            <p className="text-xs text-muted-foreground mt-1">小时 ({insights.readingTime.itemsTracked} 篇已设置)</p>
           </CardContent>
         </Card>
 
@@ -222,21 +222,21 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-500" />
+              <TrendingUp className="h-4 w-4 text-sage-500" />
               实际阅读时长
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-green-600">{insights.readingTime.totalActualHours}</p>
-            <p className="text-xs text-gray-500 mt-1">小时</p>
+            <p className="text-3xl font-bold text-sage-600">{insights.readingTime.totalActualHours}</p>
+            <p className="text-xs text-muted-foreground mt-1">小时</p>
           </CardContent>
         </Card>
       </div>
 
       {/* 阅读目标进度 */}
-      <Card className="border-green-200 dark:border-green-800">
-        <CardHeader className="bg-green-50 dark:bg-green-950">
-          <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
+      <Card className="border-sage-200 dark:border-sage-800">
+        <CardHeader className="bg-sage-50 dark:bg-sage-900">
+          <CardTitle className="flex items-center gap-2 text-sage-700 dark:text-sage-300">
             <Target className="h-5 w-5" />
             阅读目标进度
           </CardTitle>
@@ -248,7 +248,7 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-lg">今日目标</h3>
-                  <p className="text-sm text-gray-500">已完成 {insights.goals.daily.completed} / {insights.goals.daily.goal} 篇</p>
+                  <p className="text-sm text-muted-foreground">已完成 {insights.goals.daily.completed} / {insights.goals.daily.goal} 篇</p>
                 </div>
                 <div className={`text-2xl font-bold ${getProgressStatus(insights.goals.daily.percentage).color}`}>
                   {insights.goals.daily.percentage}%
@@ -263,7 +263,7 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
                   {getProgressStatus(insights.goals.daily.percentage).text}
                 </span>
                 {insights.goals.daily.remaining > 0 && (
-                  <span className="text-gray-500">
+                  <span className="text-muted-foreground">
                     还需阅读 {insights.goals.daily.remaining} 篇
                   </span>
                 )}
@@ -275,7 +275,7 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-lg">本周目标</h3>
-                  <p className="text-sm text-gray-500">已完成 {insights.goals.weekly.completed} / {insights.goals.weekly.goal} 篇</p>
+                  <p className="text-sm text-muted-foreground">已完成 {insights.goals.weekly.completed} / {insights.goals.weekly.goal} 篇</p>
                 </div>
                 <div className={`text-2xl font-bold ${getProgressStatus(insights.goals.weekly.percentage).color}`}>
                   {insights.goals.weekly.percentage}%
@@ -290,7 +290,7 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
                   {getProgressStatus(insights.goals.weekly.percentage).text}
                 </span>
                 {insights.goals.weekly.remaining > 0 && (
-                  <span className="text-gray-500">
+                  <span className="text-muted-foreground">
                     还需阅读 {insights.goals.weekly.remaining} 篇
                   </span>
                 )}
@@ -302,9 +302,9 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
 
       {/* 冷落文献提醒 */}
       {insights.neglected.count > 0 && (
-        <Card className="border-orange-200 dark:border-orange-800">
-          <CardHeader className="bg-orange-50 dark:bg-orange-950">
-            <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+        <Card className="border-clay-200 dark:border-clay-800">
+          <CardHeader className="bg-clay-50 dark:bg-clay-900">
+            <CardTitle className="flex items-center gap-2 text-clay-700 dark:text-clay-300">
               <Clock className="h-5 w-5" />
               冷落文献提醒 ({insights.neglected.count})
             </CardTitle>
@@ -317,11 +317,11 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
               {insights.neglected.items.map((item) => (
                 <div
                   key={item.item_id}
-                  className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-950/50 transition-colors cursor-pointer"
+                  className="p-3 bg-clay-50 dark:bg-clay-900/30 rounded-lg hover:bg-clay-100 dark:hover:bg-clay-900/50 transition-colors cursor-pointer"
                   onClick={() => window.open(`/literature/${item.literature_id}`, '_blank')}
                 >
                   <p className="font-medium text-sm line-clamp-2">{item.title}</p>
-                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
+                  <p className="text-xs text-clay-600 dark:text-clay-400 mt-2">
                     {item.days_since_added} 天前添加
                   </p>
                 </div>
@@ -343,28 +343,28 @@ export function InsightsDashboard({ insights }: InsightsDashboardProps) {
                 <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
               <p className="text-2xl font-bold text-red-600">{insights.priorityDistribution.urgent}</p>
-              <p className="text-sm text-gray-500">紧急</p>
+              <p className="text-sm text-muted-foreground">紧急</p>
             </div>
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900 mb-2">
-                <div className="w-4 h-4 rounded-full bg-orange-500" />
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-clay-100 dark:bg-clay-900 mb-2">
+                <div className="w-4 h-4 rounded-full bg-clay-500" />
               </div>
-              <p className="text-2xl font-bold text-orange-600">{insights.priorityDistribution.high}</p>
-              <p className="text-sm text-gray-500">高</p>
+              <p className="text-2xl font-bold text-clay-600">{insights.priorityDistribution.high}</p>
+              <p className="text-sm text-muted-foreground">高</p>
             </div>
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900 mb-2">
-                <div className="w-4 h-4 rounded-full bg-yellow-500" />
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent/15 mb-2">
+                <div className="w-4 h-4 rounded-full bg-accent" />
               </div>
-              <p className="text-2xl font-bold text-yellow-600">{insights.priorityDistribution.medium}</p>
-              <p className="text-sm text-gray-500">中</p>
+              <p className="text-2xl font-bold text-accent">{insights.priorityDistribution.medium}</p>
+              <p className="text-sm text-muted-foreground">中</p>
             </div>
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 mb-2">
-                <div className="w-4 h-4 rounded-full bg-green-500" />
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-sage-100 dark:bg-sage-900 mb-2">
+                <div className="w-4 h-4 rounded-full bg-sage-500" />
               </div>
-              <p className="text-2xl font-bold text-green-600">{insights.priorityDistribution.low}</p>
-              <p className="text-sm text-gray-500">低</p>
+              <p className="text-2xl font-bold text-sage-600">{insights.priorityDistribution.low}</p>
+              <p className="text-sm text-muted-foreground">低</p>
             </div>
           </div>
         </CardContent>

@@ -12,6 +12,10 @@
 
 @layer base {
   :root {
+    /* 字体变量默认值（next/font 加载后会覆盖；此处防 FOUT 回退） */
+    --font-sans: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-serif: Georgia, "Songti SC", "SimSun", serif;
+
     /* Warm Scholar — 米白纸面 + 琥珀点缀 + 墨色文字 */
     --background: 42 38% 96%;          /* 米白纸面 #faf6ec */
     --foreground: 30 18% 12%;          /* 墨色 #1c1812 */

@@ -1,8 +1,23 @@
 import type { Metadata } from "next";
+import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Navigation } from "@/components/navigation";
 import { Toaster } from "@/components/ui/toast";
+
+// Fraunces 衬线（展示用）+ Inter 正文（无衬线）
+// 中文回退到系统字体（PingFang/微软雅黑/宋体），在 tailwind.config 中声明
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Literature Finder - 智能文献查找助手",
@@ -15,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
-      <body className="antialiased">
+    <html lang="zh-CN" className={`${inter.variable} ${fraunces.variable}`}>
+      <body className="font-sans antialiased">
         <AuthProvider>
           <Navigation />
           {children}

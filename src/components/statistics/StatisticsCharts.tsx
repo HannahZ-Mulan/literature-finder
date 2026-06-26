@@ -51,19 +51,19 @@ interface StatisticsChartsProps {
 
 // 优先级颜色
 const PRIORITY_COLORS = {
-  urgent: '#ef4444',
-  high: '#f97316',
-  medium: '#eab308',
-  low: '#22c55e',
+  urgent: '#a64b2a', // destructive 赭红
+  high: '#c1845a',   // clay 陶土
+  medium: '#b07d12', // accent 琥珀
+  low: '#5e6e4a',    // sage 苔绿
 };
 
-// 来源颜色
+// 来源分布的颜色 — Warm Scholar 暖色系
 const SOURCE_COLORS = [
-  '#3b82f6', // blue
-  '#8b5cf6', // purple
-  '#ec4899', // pink
-  '#14b8a6', // teal
-  '#f59e0b', // amber
+  '#b07d12', // 琥珀
+  '#a64b2a', // 赭红
+  '#5e6e4a', // 苔绿
+  '#2d5470', // 深蓝
+  '#c1845a', // 陶土
 ];
 
 export function StatisticsCharts({ statistics }: StatisticsChartsProps) {
@@ -135,18 +135,18 @@ export function StatisticsCharts({ statistics }: StatisticsChartsProps) {
               <Line
                 type="monotone"
                 dataKey="read"
-                stroke="#22c55e"
+                stroke="#5e6e4a"
                 strokeWidth={2}
                 name="已完成"
-                dot={{ fill: '#22c55e', r: 4 }}
+                dot={{ fill: '#5e6e4a', r: 4 }}
               />
               <Line
                 type="monotone"
                 dataKey="viewed"
-                stroke="#3b82f6"
+                stroke="#b07d12"
                 strokeWidth={2}
                 name="已查看"
-                dot={{ fill: '#3b82f6', r: 4 }}
+                dot={{ fill: '#b07d12', r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -170,7 +170,7 @@ export function StatisticsCharts({ statistics }: StatisticsChartsProps) {
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
-                  fill="#8884d8"
+                  fill="#b07d12"
                   dataKey="value"
                 >
                   {priorityData.map((entry, index) => (
@@ -204,12 +204,12 @@ export function StatisticsCharts({ statistics }: StatisticsChartsProps) {
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
-                  fill="#8884d8"
+                  fill="#b07d12"
                   dataKey="value"
                 >
-                  <Cell fill="#22c55e" /> {/* 已读 - 绿色 */}
-                  <Cell fill="#3b82f6" /> {/* 阅读中 - 蓝色 */}
-                  <Cell fill="#94a3b8" /> {/* 未读 - 灰色 */}
+                  <Cell fill="#5e6e4a" /> {/* 已读 - 绿色 */}
+                  <Cell fill="#b07d12" /> {/* 阅读中 - 蓝色 */}
+                  <Cell fill="#8a8270" /> {/* 未读 - 暖灰 */}
                 </Pie>
                 <Tooltip
                   contentStyle={{
@@ -221,7 +221,7 @@ export function StatisticsCharts({ statistics }: StatisticsChartsProps) {
               </PieChart>
             </ResponsiveContainer>
             <div className="text-center mt-4">
-              <p className="text-3xl font-bold text-green-600">
+              <p className="text-3xl font-bold text-sage-600">
                 {statistics.overview.completionRate.toFixed(1)}%
               </p>
               <p className="text-sm text-muted-foreground">整体完成率</p>
@@ -252,7 +252,7 @@ export function StatisticsCharts({ statistics }: StatisticsChartsProps) {
                   borderRadius: '8px',
                 }}
               />
-              <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]}>
+              <Bar dataKey="value" fill="#b07d12" radius={[8, 8, 0, 0]}>
                 {sourceData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}

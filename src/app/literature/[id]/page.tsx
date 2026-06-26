@@ -494,7 +494,7 @@ export default function LiteratureDetailPage() {
           </Button>
 
           {successMessage && (
-            <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
+            <div className="bg-sage-50 border border-sage-200 text-sage-800 px-4 py-3 rounded-lg flex items-center gap-2">
               <Check className="w-4 h-4" />
               <span className="text-sm">{successMessage}</span>
             </div>
@@ -721,7 +721,7 @@ export default function LiteratureDetailPage() {
 
           {/* AI Assistant Tab */}
           <TabsContent value="ai" className="space-y-6">
-            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+            <Card className="bg-gradient-to-br from-sage-50 to-sage-100 dark:from-sage-900 dark:to-sage-900 border-sage-200 dark:border-sage-800">
               <CardContent className="pt-6">
                 <Tabs defaultValue="summary">
                   <TabsList className="grid w-full grid-cols-3">
@@ -790,18 +790,18 @@ export default function LiteratureDetailPage() {
 
                     {isGeneratingSummary && (
                       <div className="flex items-center justify-center py-8 bg-white/50 dark:bg-black/20 rounded-lg">
-                        <Loader2 className="w-6 h-6 animate-spin mr-3 text-blue-600" />
+                        <Loader2 className="w-6 h-6 animate-spin mr-3 text-sage-600" />
                         <span className="text-sm text-muted-foreground">AI 正在生成摘要，请稍候...</span>
                       </div>
                     )}
 
                     {summary && !isGeneratingSummary && (
-                      <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-sage-200 dark:border-sage-800">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="font-medium text-sm">
                             AI 生成的摘要 ({summaryLength === 'short' ? '简短' : summaryLength === 'medium' ? '中等' : '详细'})
                             {existingSummary && (
-                              <span className="ml-2 text-xs text-green-600 dark:text-green-400">
+                              <span className="ml-2 text-xs text-sage-600 dark:text-sage-400">
                                 ✓ 已缓存
                               </span>
                             )}
@@ -851,32 +851,32 @@ export default function LiteratureDetailPage() {
 
                     {isExtractingInsights && (
                       <div className="flex items-center justify-center py-8 bg-white/50 dark:bg-black/20 rounded-lg">
-                        <Loader2 className="w-6 h-6 animate-spin mr-3 text-purple-600" />
+                        <Loader2 className="w-6 h-6 animate-spin mr-3 text-clay-600" />
                         <span className="text-sm text-muted-foreground">AI 正在分析论文...</span>
                       </div>
                     )}
 
                     {insights && !isExtractingInsights && (
-                      <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-purple-200 dark:border-purple-800 space-y-4">
+                      <div className="bg-card p-4 rounded-lg border border-clay-200 dark:border-clay-800 space-y-4">
                         <div className="grid grid-cols-1 gap-4">
                           <div>
-                            <h4 className="font-medium text-sm mb-2 text-purple-700 dark:text-purple-300">🔍 研究问题</h4>
+                            <h4 className="font-medium text-sm mb-2 text-clay-700 dark:text-clay-300">🔍 研究问题</h4>
                             <p className="text-sm text-muted-foreground">{insights.research_question}</p>
                           </div>
                           <div>
-                            <h4 className="font-medium text-sm mb-2 text-purple-700 dark:text-purple-300">⚙️ 方法论</h4>
+                            <h4 className="font-medium text-sm mb-2 text-clay-700 dark:text-clay-300">⚙️ 方法论</h4>
                             <p className="text-sm text-muted-foreground">{insights.methodology}</p>
                           </div>
                           <div>
-                            <h4 className="font-medium text-sm mb-2 text-purple-700 dark:text-purple-300">🎯 关键发现</h4>
+                            <h4 className="font-medium text-sm mb-2 text-clay-700 dark:text-clay-300">🎯 关键发现</h4>
                             <p className="text-sm text-muted-foreground">{insights.key_findings}</p>
                           </div>
                           <div>
-                            <h4 className="font-medium text-sm mb-2 text-purple-700 dark:text-purple-300">⚠️ 局限性</h4>
+                            <h4 className="font-medium text-sm mb-2 text-clay-700 dark:text-clay-300">⚠️ 局限性</h4>
                             <p className="text-sm text-muted-foreground">{insights.limitations}</p>
                           </div>
                           <div>
-                            <h4 className="font-medium text-sm mb-2 text-purple-700 dark:text-purple-300">🚀 未来工作</h4>
+                            <h4 className="font-medium text-sm mb-2 text-clay-700 dark:text-clay-300">🚀 未来工作</h4>
                             <p className="text-sm text-muted-foreground">{insights.future_work}</p>
                           </div>
                         </div>
@@ -888,7 +888,7 @@ export default function LiteratureDetailPage() {
                   <TabsContent value="chat" className="space-y-4 mt-4">
                     {!showChat ? (
                       <div className="text-center py-6">
-                        <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50 text-green-600" />
+                        <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50 text-sage-600" />
                         <p className="text-sm text-muted-foreground mb-3">
                           向 AI 提问关于这篇论文的任何问题
                         </p>
@@ -899,7 +899,7 @@ export default function LiteratureDetailPage() {
                     ) : (
                       <div className="space-y-4">
                         {/* Chat History */}
-                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-green-200 dark:border-green-800 p-4 max-h-96 overflow-y-auto space-y-3">
+                        <div className="bg-white dark:bg-gray-900 rounded-lg border border-sage-200 dark:border-sage-800 p-4 max-h-96 overflow-y-auto space-y-3">
                           {chatHistory.length === 0 ? (
                             <p className="text-sm text-muted-foreground text-center py-4">
                               开始提问吧！例如："这篇论文的主要贡献是什么？"
@@ -909,8 +909,8 @@ export default function LiteratureDetailPage() {
                               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[80%] rounded-lg p-3 ${
                                   msg.role === 'user'
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-secondary text-secondary-foreground'
                                 }`}>
                                   <p className="text-sm">{msg.content}</p>
                                 </div>
@@ -920,7 +920,7 @@ export default function LiteratureDetailPage() {
                           {isChatting && (
                             <div className="flex justify-start">
                               <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
-                                <Loader2 className="w-4 h-4 animate-spin text-green-600" />
+                                <Loader2 className="w-4 h-4 animate-spin text-sage-600" />
                               </div>
                             </div>
                           )}
@@ -935,7 +935,7 @@ export default function LiteratureDetailPage() {
                             onKeyPress={(e) => e.key === 'Enter' && !isChatting && handleChat()}
                             placeholder="输入您的问题..."
                             disabled={isChatting}
-                            className="flex-1 px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-card focus:outline-none focus:ring-2 focus:ring-accent"
                           />
                           <Button
                             onClick={handleChat}
@@ -963,13 +963,13 @@ export default function LiteratureDetailPage() {
           {/* PDF Reading Tab */}
           <TabsContent value="pdf" className="space-y-6">
             {literature.pdf_url ? (
-              <Card className="border-green-200 dark:border-green-900">
+              <Card className="border-sage-200 dark:border-green-900">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between flex-wrap gap-y-2">
                     <div className="flex items-center gap-2 text-lg">
-                      <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      <FileText className="w-5 h-5 text-sage-600 dark:text-sage-400" />
                       <span>PDF 预览</span>
-                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full">
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-sage-100 dark:bg-green-900 text-sage-700 dark:text-sage-300 rounded-full">
                         📖 免费全文
                       </span>
                     </div>
@@ -1062,12 +1062,12 @@ export default function LiteratureDetailPage() {
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20">
+              <Card className="border-sage-200 dark:border-sage-900 bg-sage-50/50 dark:bg-sage-900/20">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <FileText className="w-5 h-5 text-sage-600 dark:text-sage-400" />
                         <h3 className="font-medium">获取全文</h3>
                       </div>
                       <p className="text-sm text-muted-foreground mb-3">
