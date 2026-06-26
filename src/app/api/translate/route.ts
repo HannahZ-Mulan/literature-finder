@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getAIManager } from '@/lib/ai';
 
 const translateSchema = z.object({
-  text: z.string().min(1),
+  text: z.string().min(1).max(5000, '文本过长，请选择更短的段落（上限 5000 字符）'),
   target_language: z.enum(['zh', 'en']).default('zh'),
 });
 

@@ -22,6 +22,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
+    // Validate file type (must be PDF)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({
+        error: '文件过大',
+        details: `文件大小 ${(file.size / 1024 / 1024).toFixed(1)} MB 超过 50 MB 上限。请压缩或拆分 PDF 后重试。`,
+      }, { status: 413 });
+    }
+
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
+      return NextResponse.json({
+        error: '不支持的文件类型',
+        details: '仅支持 PDF 文件。',
+      }, { status: 415 });
+    }
+
     console.log(`[Upload] Starting upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
     // 保存文件

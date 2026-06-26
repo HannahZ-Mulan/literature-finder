@@ -8,11 +8,11 @@ import { retrieveRelevantChunks } from '@/lib/search/chunk-retriever';
 import { getChunksByPaperId } from '@/lib/chunker/chunk-storage';
 
 const chatSchema = z.object({
-  question: z.string().min(1),
+  question: z.string().min(1).max(2000, '问题过长（上限 2000 字符）'),
   chat_history: z.array(z.object({
     role: z.enum(['system', 'user', 'assistant']),
-    content: z.string(),
-  })).optional(),
+    content: z.string().max(10000),
+  })).max(20, '历史记录过多').optional(),
 });
 
 // POST - Chat with paper

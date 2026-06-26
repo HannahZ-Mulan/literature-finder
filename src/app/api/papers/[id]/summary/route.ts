@@ -4,6 +4,11 @@ import { papers } from '@/db/index-papers';
 import { eq } from 'drizzle-orm';
 import { getAIManager } from '@/lib/ai';
 
+// Module-level set tracking paperIds whose summary is currently being
+// generated, to prevent concurrent duplicate (double-billed) AI calls.
+// Note: per-process; a multi-instance deployment would need a shared store.
+const summaryInProgress = new Set<number>();
+
 // GET - Retrieve existing summary
 export async function GET(
   request: NextRequest,
@@ -80,6 +85,20 @@ export async function POST(
         cached: true,
       });
     }
+
+    // Guard against concurrent duplicate generation (double AI call / billing).
+    // If another request is already generating this paper's summary, ask the
+    // client to retry shortly instead of firing a second paid AI call.
+    if (summaryInProgress.has(paperId)) {
+      return NextResponse.json({
+        error: '该论文的摘要正在生成中，请稍后重试',
+        degraded: true,
+        retry: true,
+      }, { status: 409 });
+    }
+
+    summaryInProgress.add(paperId);
+    try {
 
     // 直接调用 DeepSeek API，要求 JSON 输出（markdown 解析过于脆弱）
     const { getDeepSeekClient } = await import('@/lib/ai/deepseek');
@@ -189,6 +208,10 @@ ${content}
       provider: 'deepseek',
       usage: result.usage,
     });
+    } finally {
+      // Always release the in-progress flag (success or failure)
+      summaryInProgress.delete(paperId);
+    }
   } catch (error) {
     console.error('Generate summary error:', error);
     return NextResponse.json(
