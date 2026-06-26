@@ -1,10 +1,16 @@
 # Literature Finder
 
+> 🌐 [中文](#中文) | [English](#english)
+
+---
+
+<a id="中文"></a>
+
+# Literature Finder(中文)
+
 AI 驱动的文献管理与深度阅读助手,帮助用户(尤其需要阅读英文学术论文的中国学生)在几分钟内理解一篇论文:上传 PDF → AI 生成结构化中文解读 → 选中段落翻译+解释 → 与论文对话(RAG 问答)。
 
 > 产品愿景来自 `MVP_SPECIFICATION.md`:专注**论文理解**,而非论文管理。
-
----
 
 ## ✨ 核心功能(MVP 4 件套)
 
@@ -22,8 +28,6 @@ AI 驱动的文献管理与深度阅读助手,帮助用户(尤其需要阅读英
 - **关键词搜索** — 对已上传论文的分块做相关性打分检索
 - **Warm Scholar 主题** — 米白纸面 / 琥珀点缀的学术质感视觉语言(换肤进行中,详见 `docs/specs/SPEC-001-ui-redesign-warm-scholar.md`)
 
----
-
 ## 🛠 技术栈
 
 | 层 | 技术 |
@@ -33,8 +37,6 @@ AI 驱动的文献管理与深度阅读助手,帮助用户(尤其需要阅读英
 | 数据库 | SQLite(libsql) |
 | AI | DeepSeek(主)· 智谱 GLM-4 · OpenAI(可选,通过 AI Manager 级联回退) |
 | PDF | pdf-parse(文本提取)· pdfjs-dist(预览) |
-
----
 
 ## 🚀 快速开始
 
@@ -79,8 +81,6 @@ cp .env.example .env.local
 
 > 💡 **路由说明**:摘要功能直连 DeepSeek;对话与翻译经 AI Manager,当前实际尝试顺序为 `openai → deepseek`。配置多提供商时,失败会自动回退。详见 `src/lib/ai/`。
 
----
-
 ## 📁 项目结构
 
 ```
@@ -102,8 +102,6 @@ src/
 └── db/                      # Drizzle schema + 连接
 ```
 
----
-
 ## 🧠 关键设计
 
 ### RAG 问答(功能 4)
@@ -120,8 +118,6 @@ src/
 
 所有 AI 端点(summary / core-insights / translate / chat)在生成失败时**返回 `degraded: true` + HTTP 5xx + 明确错误提示**,而非静默返回假数据。前端检测到降级会显示红色错误提示。
 
----
-
 ## 📜 常用脚本
 
 ```bash
@@ -135,16 +131,12 @@ npx tsx scripts/validate-chunk-completeness.ts # 校验所有论文已分块
 npx tsx scripts/analyze-text-stats.ts          # 文本长度/保留率统计
 ```
 
----
-
 ## 📌 状态与路线
 
 **MVP 4 大功能已全部完成。** 后续路线见 `IMPLEMENTATION_ROADMAP.md`:
 
 - Warm Scholar 换肤轨道二(替换 120 处硬编码颜色类)、轨道三(字体)
 - 引用格式优化、PDF 预览增强
-
----
 
 ## 📄 文档
 
@@ -153,8 +145,6 @@ npx tsx scripts/analyze-text-stats.ts          # 文本长度/保留率统计
 - `PROJECT_RULES.md` — 开发约定(布局规则、组件规范)
 - `docs/specs/` — 功能规格(SPEC-001 UI 重设计)
 
----
-
 ## ⚠️ 已知限制
 
 - PDF 文本提取依赖 `pdf-parse`,扫描版(图片)PDF 需 OCR(尚未集成)
@@ -162,5 +152,155 @@ npx tsx scripts/analyze-text-stats.ts          # 文本长度/保留率统计
 - `uploads/` 目录在 `.gitignore` 中,PDF 不进版本库(运行时数据)
 
 ---
+---
 
-*Built as an MVP focused on the core reading comprehension experience.*
+<a id="english"></a>
+
+# Literature Finder (English)
+
+An AI-powered literature management and deep-reading assistant that helps users—especially Chinese students reading English academic papers—understand a paper in minutes: upload a PDF → AI generates a structured Chinese explanation → select any paragraph for translation + explanation → chat with the paper via RAG Q&A.
+
+> Product vision from `MVP_SPECIFICATION.md`: focused on **paper comprehension**, not paper management.
+
+## ✨ Core Features (MVP)
+
+| # | Feature | Description |
+|---|---------|-------------|
+| 1 | **Upload Paper** | Upload a PDF; text is extracted and chunked by academic section (Abstract / Methods / Results …) into the database |
+| 2 | **AI Chinese Summary** | Structured breakdown: one-sentence summary, research question, methods, key findings, contributions, limitations — each conclusion tagged with 📍 source location |
+| 3 | **Paragraph Translation + Explanation** | Select any paragraph; the AI returns both an **accurate translation** and a **plain-language explanation** |
+| 4 | **Chat with Paper** | RAG-based Q&A — retrieves the most relevant section chunks first, then hands them to the LLM, avoiding full-text truncation that loses information |
+
+### Additional Capabilities
+
+- **External Academic Search** — one-stop search across OpenAlex / arXiv / PubMed / Semantic Scholar (250M+ papers)
+- **Google Scholar Integration** — one-click Scholar lookup from the paper page
+- **Keyword Search** — relevance-scored retrieval over uploaded-paper chunks
+- **Warm Scholar Theme** — warm-paper / amber academic visual language (reskin in progress; see `docs/specs/SPEC-001-ui-redesign-warm-scholar.md`)
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 14.2.21 · React 18 · TypeScript · Tailwind CSS · shadcn/ui · Lucide |
+| Backend | Next.js API Routes · Drizzle ORM |
+| Database | SQLite (libsql) |
+| AI | DeepSeek (primary) · Zhipu GLM-4 · OpenAI (optional, via AI Manager cascade fallback) |
+| PDF | pdf-parse (text extraction) · pdfjs-dist (preview) |
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js ≥ 18 (v24 used in development)
+- npm
+
+### Install & Run
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment variables
+cp .env.example .env.local   # then fill in your API keys (see below)
+
+# 3. Start the dev server
+npm run dev
+# open http://localhost:3000
+```
+
+### Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in at least one AI provider key (the template has detailed comments and a cost comparison):
+
+```bash
+cp .env.example .env.local
+```
+
+Supported providers (see `.env.example`):
+
+| Provider | Env Var | Notes |
+|----------|---------|-------|
+| Zhipu GLM-4 | `ZHIPU_GLM_API_KEY` | Recommended for China; fast, low-cost |
+| DeepSeek | `DEEPSEEK_API_KEY` | High cost-performance |
+| OpenAI | `OPENAI_API_KEY` | Best quality; needs a proxy in China |
+| Ollama | `OLLAMA_BASE_URL` | Free, local; self-hosted |
+| Claude | `ANTHROPIC_API_KEY` | Strong long-context handling |
+
+Optionally set the preferred provider: `AI_PROVIDER=zhipu` (auto-detected fallback if unset).
+
+> 💡 **Routing note**: the summary feature hits DeepSeek directly; chat and translation go through the AI Manager, whose current effective order is `openai → deepseek`. With multiple providers configured, failures fall back automatically. See `src/lib/ai/`.
+
+## 📁 Project Structure
+
+```
+src/
+├── app/
+│   ├── paper/[id]/          # Paper detail (two-column: paper | AI features)
+│   ├── upload/              # PDF upload
+│   ├── search/              # External academic search
+│   ├── my-papers/           # My papers list
+│   └── api/
+│       ├── papers/[id]/     # Paper APIs (summary / core-insights / chat / chunk)
+│       ├── translate/       # Paragraph translation + explanation
+│       ├── search/chunks/   # Chunk keyword search
+│       └── google-scholar/  # Scholar lookup link
+├── lib/
+│   ├── ai/                  # AI clients + Manager (cascade fallback)
+│   ├── chunker/             # Academic section detection + chunk storage
+│   └── search/              # Keyword extraction / scoring / RAG retrieval
+└── db/                      # Drizzle schema + connection
+```
+
+## 🧠 Key Design
+
+### RAG Q&A (Feature 4)
+
+Chatting with a paper is not "stuff the whole text into the prompt" — it's genuine retrieval augmentation:
+
+1. At upload, text is **chunked** by academic section into the DB (`src/lib/chunker/`)
+2. On question, **keyword scoring** retrieves the top-5 most relevant chunks (`src/lib/search/chunk-retriever.ts`)
+3. Only the relevant chunks are passed to the LLM as context
+
+When retrieval returns nothing, a **three-tier fallback** kicks in: section heads (Abstract/Intro) → full-text truncation, ensuring context is always available.
+
+### AI Honesty
+
+All AI endpoints (summary / core-insights / translate / chat) **return `degraded: true` + HTTP 5xx + a clear error message** on generation failure, rather than silently returning fake data. The frontend detects degraded responses and shows a red error toast.
+
+## 📜 Common Scripts
+
+```bash
+npm run dev          # Dev server
+npm run build        # Production build
+npm run typecheck    # TypeScript type check
+
+# Diagnostics (scripts/)
+npx tsx scripts/check-db-state.ts              # paper/chunk counts
+npx tsx scripts/validate-chunk-completeness.ts # verify all papers chunked
+npx tsx scripts/analyze-text-stats.ts          # text-length / retention stats
+```
+
+## 📌 Status & Roadmap
+
+**All 4 MVP features are complete.** The roadmap lives in `IMPLEMENTATION_ROADMAP.md`:
+
+- Warm Scholar reskin track 2 (replace 120 hardcoded color classes), track 3 (typography)
+- Citation-format improvements, PDF-preview enhancements
+
+## 📄 Documentation
+
+- `MVP_SPECIFICATION.md` — product spec (feature scope, out-of-scope items)
+- `IMPLEMENTATION_ROADMAP.md` — implementation roadmap
+- `PROJECT_RULES.md` — dev conventions (layout rules, component standards)
+- `docs/specs/` — feature specs (SPEC-001 UI redesign)
+
+## ⚠️ Known Limitations
+
+- PDF text extraction relies on `pdf-parse`; scanned (image) PDFs need OCR (not yet integrated)
+- Keyword retrieval is term-frequency scoring, not semantic vector search — fine-grained Q&A on long papers could later adopt a vector store
+- `uploads/` is in `.gitignore`; PDFs are runtime data and not version-controlled
+
+---
+
+*Built as an MVP focused on the core reading-comprehension experience.*
