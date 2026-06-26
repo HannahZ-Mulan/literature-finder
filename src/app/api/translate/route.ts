@@ -17,39 +17,70 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
-    const { text, target_language } = validation.data;
+    const { text } = validation.data;
 
-    const targetLangName = target_language === 'zh' ? '中文' : 'English';
-    const direction = target_language === 'zh' ? '英译中' : '中译英';
-
-    // Use AI Manager for translation with fallback support
+    // Use AI Manager for translation with fallback support.
+    // MVP spec requires BOTH a translation AND a simple explanation of the
+    // paragraph, so we ask for a JSON object with both fields.
     try {
       const aiManager = getAIManager();
 
-      // Build translation prompt
-      const systemMessage = `You are a professional academic translator. Your task is to translate ${direction} while preserving the technical accuracy and academic tone.
+      const prompt = `请处理以下学术文本，返回中文翻译和简单解释。
 
-Guidelines:
-- Maintain technical terminology accuracy
-- Preserve the academic writing style
-- Keep citations and references unchanged
-- Ensure natural and readable translation`;
-
-      const userMessage = `Please translate the following text to ${targetLangName}:
-
+原文：
 ${text}
 
-Provide only the translation, no explanations.`;
+严格按以下 JSON 格式输出，只返回 JSON 对象，不要任何额外文字或 markdown 代码块：
+{
+  "translation": "准确的中文翻译，保持学术术语准确性和学术写作风格",
+  "explanation": "用通俗易懂的中文对这段内容的简单解释，帮助读者理解其含义，2-4句话"
+}
 
-      // Use chatWithPaper for translation (it supports multiple providers)
+只返回 JSON 对象。`;
+
+      // chatWithPaper(question, title, context) - reuse it as a generic
+      // single-turn completion. The "context" here is an instruction.
       const result = await aiManager.chatWithPaper(
-        userMessage,
-        'Translation Task',
-        systemMessage
+        prompt,
+        'Academic Translation and Explanation',
+        'You are a professional academic translator and explainer for Chinese students.'
       );
 
+      const aiContent = result.content || '';
+
+      // Parse JSON: try ```json block first, then bare {...}
+      const jsonMatch = aiContent.match(/```json\s*([\s\S]*?)\s*```/) ||
+                        aiContent.match(/\{[\s\S]*\}/);
+
+      let translation = '';
+      let explanation = '';
+
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+          translation = String(parsed.translation || '').trim();
+          explanation = String(parsed.explanation || '').trim();
+        } catch (parseError) {
+          console.error('[Translate] JSON parse failed, falling back to raw content:', parseError);
+          // If JSON parse fails, treat the whole AI output as the translation
+          translation = aiContent.trim();
+        }
+      } else {
+        // No JSON structure at all - use raw content as translation
+        translation = aiContent.trim();
+      }
+
+      // Guard against empty results
+      if (!translation) {
+        translation = '[翻译结果为空，请重试]';
+      }
+      if (!explanation) {
+        explanation = '暂无解释';
+      }
+
       return NextResponse.json({
-        translation: result.content,
+        translation,
+        explanation,
         original_text: text,
         usage: result.usage,
         provider: result.provider,
@@ -61,6 +92,7 @@ Provide only the translation, no explanations.`;
       console.warn('[Translate] AI provider failed:', aiError);
       return NextResponse.json({
         translation: '',
+        explanation: '',
         original_text: text,
         provider: 'fallback',
         degraded: true,

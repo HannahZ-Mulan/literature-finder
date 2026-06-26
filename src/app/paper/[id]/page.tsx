@@ -87,6 +87,7 @@ export default function PaperReaderPage() {
   // Translation states
   const [selectedText, setSelectedText] = useState('');
   const [translation, setTranslation] = useState('');
+  const [explanation, setExplanation] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
 
   // PPT generation states
@@ -380,6 +381,7 @@ export default function PaperReaderPage() {
 
     setIsTranslating(true);
     setTranslation('');
+    setExplanation('');
 
     try {
       const response = await fetch('/api/translate', {
@@ -398,6 +400,7 @@ export default function PaperReaderPage() {
           // Translation service unavailable - show honest message, don't
           // display the original text as if it were a translation.
           setTranslation('');
+          setExplanation('');
           toast({
             variant: "destructive",
             title: "翻译失败",
@@ -410,6 +413,7 @@ export default function PaperReaderPage() {
       }
 
       setTranslation(data.translation);
+      setExplanation(data.explanation || '');
       toast({
         title: "翻译完成",
         description: "文本已成功翻译为中文",
@@ -622,6 +626,15 @@ export default function PaperReaderPage() {
                           <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                             <p className="text-sm font-medium mb-2">中文翻译：</p>
                             <p className="text-sm text-gray-700 dark:text-gray-300">{translation}</p>
+                          </div>
+                        )}
+
+                        {explanation && explanation !== '暂无解释' && (
+                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                            <p className="text-sm font-medium mb-2 flex items-center gap-1">
+                              💡 段落解释：
+                            </p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{explanation}</p>
                           </div>
                         )}
                       </CardContent>
