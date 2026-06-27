@@ -1,7 +1,12 @@
 import { db } from '@/db';
-import { paperChunks } from '@/db/schema';
+import { paperChunks, chunkEmbeddings } from '@/db/schema';
 import { Section } from './section-detector';
 import { eq } from 'drizzle-orm';
+import { generateEmbedding, isEmbeddingAvailable } from '@/lib/ai/embeddings';
+import { vectorIndex } from '@/lib/search/vector-index';
+
+// Minimum meaningful text length for embedding (filters PDF-extraction garbage).
+const MIN_EMBEDDABLE_CHARS = 20;
 
 /**
  * Store chunks in database
@@ -16,20 +21,42 @@ export async function storeChunks(
   console.log(`Storing ${sections.length} chunks for paper ${paperId}...`);
 
   let storedCount = 0;
+  let embeddedCount = 0;
   const errors: Array<{ index: number; error: string }> = [];
+
+  const canEmbed = isEmbeddingAvailable();
 
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i];
 
     try {
-      await db.insert(paperChunks).values({
+      // Insert and return the generated chunk id (for linking the embedding).
+      const [inserted] = await db.insert(paperChunks).values({
         paper_id: paperId,
         chunk_type: section.type,
         chunk_text: section.text,
         char_start: section.startPos,
         char_end: section.endPos
-      });
+      }).returning({ id: paperChunks.id });
       storedCount++;
+
+      // Best-effort incremental embedding: failures must NOT break upload.
+      // Skipped when no API key, or text is too short / garbage.
+      if (canEmbed && inserted && section.text.trim().length >= MIN_EMBEDDABLE_CHARS) {
+        try {
+          const embedding = await generateEmbedding(section.text.slice(0, 6000));
+          await db.insert(chunkEmbeddings).values({
+            chunk_id: inserted.id,
+            embedding: JSON.stringify(embedding),
+            model: 'embedding-3',
+          });
+          vectorIndex.addVector(inserted.id, embedding);
+          embeddedCount++;
+        } catch (embError) {
+          console.warn(`[chunk-storage] embedding failed for chunk ${inserted.id} (non-fatal):`,
+            embError instanceof Error ? embError.message.slice(0, 80) : 'unknown');
+        }
+      }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       console.error(`Failed to store chunk ${i}:`, errorMsg);
@@ -41,7 +68,7 @@ export async function storeChunks(
     console.warn(`⚠️  Failed to store ${errors.length}/${sections.length} chunks:`, errors);
   }
 
-  console.log(`✅ Stored ${storedCount}/${sections.length} chunks`);
+  console.log(`✅ Stored ${storedCount}/${sections.length} chunks (${embeddedCount} embedded)`);
   return storedCount;
 }
 

@@ -3,14 +3,13 @@ import { db } from '@/db';
 import { paperChunks, uploadedPapers } from '@/db/schema';
 import { desc, sql, and, eq } from 'drizzle-orm';
 import {
-  calculateRelevanceScore,
-  generateHighlight,
   normalizeQuery,
-  type SearchResult
 } from '@/lib/search/keyword-extractor';
+import { hybridSearch } from '@/lib/search/hybrid-search';
+import { ensureIndexLoaded } from '@/lib/search/index-loader';
 
 /**
- * POST /api/search/chunks - Search chunks by keywords
+ * POST /api/search/chunks - Hybrid search (keyword + semantic vector via RRF)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,14 +28,13 @@ export async function POST(request: NextRequest) {
     const chunkTypes = body.chunkTypes; // Optional: filter by chunk types
     const limit = body.limit || 20; // Default: 20 results
 
-    // Normalize query
+    // Normalize query for keyword-channel highlighting in the response.
+    // NOTE: we do NOT gate on queryTerms.length === 0 here. normalizeQuery is
+    // English-oriented (stopword list is English), so a pure Chinese/natural-
+    // language query can produce zero English tokens — but the semantic channel
+    // can still match it. Gating would block the very natural-language queries
+    // semantic search is meant to enable.
     const queryTerms = normalizeQuery(query);
-    if (queryTerms.length === 0) {
-      return NextResponse.json(
-        { error: 'No valid search terms after filtering stopwords' },
-        { status: 400 }
-      );
-    }
 
     // Build query conditions
     const conditions = [];
@@ -53,11 +51,8 @@ export async function POST(request: NextRequest) {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Fetch all chunks that might match (we'll filter and score in memory)
-    // This is a simple approach - for production with large datasets, consider:
-    // - Full-text search (SQLite FTS5)
-    // - Vector embeddings (for semantic search)
-    // - External search service (Elasticsearch, Meilisearch)
+    // Fetch all candidate chunks (filtered by paperId/chunkTypes).
+    // Both keyword and semantic channels score these in memory.
     const allChunks = await db
       .select({
         id: paperChunks.id,
@@ -72,46 +67,34 @@ export async function POST(request: NextRequest) {
       .orderBy(desc(paperChunks.created_at))
       .limit(500); // Limit initial fetch for performance
 
-    // Calculate relevance scores for each chunk
-    const scoredChunks: SearchResult[] = allChunks
-      .map(chunk => {
-        const relevanceScore = calculateRelevanceScore(
-          chunk.chunkText,
-          query,
-          chunk.chunkType
-        );
+    // Ensure the in-memory vector index is warm (lazy load from DB on first call).
+    // Failures here are non-fatal — hybridSearch degrades to keyword-only.
+    try {
+      await ensureIndexLoaded();
+    } catch (e) {
+      console.warn('[search/chunks] vector index load failed, falling back to keyword-only:', e);
+    }
 
-        // Only include chunks with non-zero score
-        if (relevanceScore === 0) {
-          return null;
-        }
+    // Run hybrid search: keyword recall + semantic recall, fused via RRF.
+    const { results: scoredChunks, matchType } = await hybridSearch({
+      query,
+      chunks: allChunks.map((c) => ({
+        chunkId: c.id,
+        paperId: c.paperId,
+        chunkType: c.chunkType,
+        chunkText: c.chunkText,
+      })),
+      limit,
+    });
 
-        // Find matched keywords
-        const chunkLower = chunk.chunkText.toLowerCase();
-        const matchedKeywords = queryTerms.filter(term =>
-          chunkLower.includes(term)
-        );
-
-        return {
-          chunkId: chunk.id,
-          paperId: chunk.paperId,
-          chunkType: chunk.chunkType,
-          chunkText: chunk.chunkText,
-          relevanceScore,
-          matchedKeywords,
-          highlight: generateHighlight(chunk.chunkText, query)
-        };
-      })
-      .filter((chunk): chunk is SearchResult => chunk !== null)
-      .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .slice(0, limit);
-
-    // Return results
+    // Return results (contract is backward-compatible: existing fields kept,
+    // matchType added so the UI can indicate semantic vs keyword matching).
     return NextResponse.json({
       results: scoredChunks,
       totalResults: scoredChunks.length,
       query: query,
-      queryTerms: queryTerms
+      queryTerms: queryTerms,
+      matchType
     });
 
   } catch (error) {
