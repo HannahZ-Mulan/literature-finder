@@ -1,7 +1,7 @@
 import { Literature, SearchParams, SearchResults, ArXivRawEntry, LiteratureSource } from '../types';
 import { rateLimiters } from '../rate-limiter';
 
-const ARXIV_API_BASE = 'http://export.arxiv.org/api/query';
+const ARXIV_API_BASE = process.env.ARXIV_PROXY || 'http://export.arxiv.org/api/query';
 
 /**
  * Parse arXiv ID from URL or return the ID

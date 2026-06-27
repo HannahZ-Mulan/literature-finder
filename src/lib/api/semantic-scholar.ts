@@ -1,7 +1,7 @@
 import { Literature, SearchParams, SearchResults, SemanticScholarRawEntry, LiteratureSource } from '../types';
 import { rateLimiters } from '../rate-limiter';
 
-const SEMANTIC_SCHOLAR_API_BASE = 'https://api.semanticscholar.org/graph/v1';
+const SEMANTIC_SCHOLAR_API_BASE = process.env.SEMANTIC_SCHOLAR_PROXY || 'https://api.semanticscholar.org/graph/v1';
 const SEMANTIC_SCHOLAR_API_KEY = process.env.SEMANTIC_SCHOLAR_API_KEY || '';
 
 /**

@@ -1,7 +1,7 @@
 import { Literature, SearchParams, SearchResults, PubMedRawEntry, LiteratureSource } from '../types';
 import { rateLimiters } from '../rate-limiter';
 
-const PUBMED_API_BASE = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
+const PUBMED_API_BASE = process.env.PUBMED_PROXY || 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
 const PUBMED_API_KEY = process.env.PUBMED_API_KEY || '';
 
 /**

@@ -1,7 +1,7 @@
 import { Literature, SearchParams, SearchResults, OpenAlexRawEntry, LiteratureSource } from '../types';
 import { rateLimiters } from '../rate-limiter';
 
-const OPENALEX_API_BASE = 'https://api.openalex.org';
+const OPENALEX_API_BASE = process.env.OPENALEX_PROXY || 'https://api.openalex.org';
 
 /**
  * Reconstruct abstract from OpenAlex's inverted index format
