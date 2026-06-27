@@ -37,6 +37,7 @@ next-env.d.ts
 sqlite.db
 sqlite.db-shm
 sqlite.db-wal
+sqlite.db.backup-*
 /drizzle
 
 # user-uploaded files (PDFs etc.) - runtime data, not source
