@@ -21,6 +21,9 @@ export function Navigation() {
                 <Link href="/search" className="text-sm hover:text-primary transition-colors">
                   学术搜索
                 </Link>
+                <Link href="/search-local" className="text-sm hover:text-primary transition-colors">
+                  语义搜索
+                </Link>
                 <Link href="/library" className="text-sm hover:text-primary transition-colors">
                   我的库
                 </Link>
