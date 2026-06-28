@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { readingLists, readingListItems } from '@/db/schema';
+import { readingLists, readingListItems, literature } from '@/db/schema';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 
@@ -38,10 +38,30 @@ export async function GET(
       );
     }
 
-    // Get items count
+    // Get items with joined literature details (title/abstract) so the
+    // frontend can render list contents without a second round-trip.
+    // Items are returned alongside item_count.
     const items = await db
-      .select()
+      .select({
+        id: readingListItems.id,
+        literature_id: readingListItems.literature_id,
+        sort_order: readingListItems.sort_order,
+        reading_status: readingListItems.reading_status,
+        due_date: readingListItems.due_date,
+        priority: readingListItems.priority,
+        estimated_reading_time: readingListItems.estimated_reading_time,
+        actual_reading_time: readingListItems.actual_reading_time,
+        created_at: readingListItems.created_at,
+        updated_at: readingListItems.updated_at,
+        // Joined fields from literature (works for both uploaded papers and
+        // online literature — unified by SPEC-003).
+        literature_title: literature.title,
+        literature_source: literature.source,
+        literature_abstract: literature.abstract,
+        literature_pdf_url: literature.pdf_url,
+      })
       .from(readingListItems)
+      .leftJoin(literature, eq(literature.id, readingListItems.literature_id))
       .where(eq(readingListItems.reading_list_id, listId));
 
     return NextResponse.json({
@@ -49,6 +69,7 @@ export async function GET(
         ...lists[0],
         item_count: items.length,
       },
+      items,
     });
   } catch (error) {
     console.error('Get reading list error:', error);
