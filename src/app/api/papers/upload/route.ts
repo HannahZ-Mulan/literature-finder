@@ -4,6 +4,8 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { extractPDFSimple } from '@/lib/pdf-extractor-simple';
 import { dbPapers, papers } from '@/db/index-papers';
+import { db } from '@/db';
+import { literature } from '@/db/schema';
 import { sql, eq } from 'drizzle-orm';
 import { detectSections } from '@/lib/chunker/section-detector';
 import { storeChunks } from '@/lib/chunker/chunk-storage';
@@ -125,6 +127,31 @@ export async function POST(req: NextRequest) {
         } catch (chunkError) {
           console.error(`[Chunking] ❌ Failed for paper ID=${paperId}:`, chunkError);
           // Don't fail the upload process if chunking fails
+        }
+
+        // Sync to literature table — unifies uploaded papers with the rest of
+        // the system (reading lists, notes, categories, tags all key on
+        // literature.id). Failure is non-fatal: the paper still works without
+        // a literature identity, just can't be added to lists/notes.
+        try {
+          console.log(`[Literature] Syncing paper ID=${paperId} to literature table`);
+          const [inserted] = await db.insert(literature).values({
+            title,
+            authors: '[]', // authors unknown for uploads
+            abstract: abstract || null,
+            source: 'upload', // marks origin (vs arxiv/pubmed/semantic-scholar)
+            pdf_url: fileName, // local file identifier
+            citation_count: 0,
+          }).returning({ id: literature.id });
+
+          if (inserted?.id) {
+            await dbPapers.update(papers)
+              .set({ literature_id: inserted.id, updatedAt: sql`CURRENT_TIMESTAMP` })
+              .where(eq(papers.id, paperId));
+            console.log(`[Literature] ✅ Paper ID=${paperId} → literature #${inserted.id}`);
+          }
+        } catch (litError) {
+          console.error(`[Literature] ❌ Sync failed for paper ID=${paperId} (non-fatal):`, litError);
         }
 
         console.log(`  - Pages: ${numPages}`);
