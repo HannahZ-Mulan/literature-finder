@@ -245,6 +245,7 @@ export const uploadedPapers = sqliteTable('uploaded_papers', {
   summary: text('summary'), // JSON string with structured summary
   googleScholarUrl: text('google_scholar_url'), // Google Scholar搜索链接
   abstract: text('abstract'), // 论文摘要（用于Google Scholar搜索）
+  literature_id: integer('literature_id').references(() => literature.id), // 反向关联到 literature 表(统一体系, nullable: 迁移前/上传失败时为空)
   immersiveReadings: text('immersive_readings'), // JSON: 沉浸式深读导读缓存
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
