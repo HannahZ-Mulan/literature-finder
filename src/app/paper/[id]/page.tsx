@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowLeft, Sparkles, MessageSquare, FileText, Languages, FileOutput, CheckCircle2, AlertCircle, ExternalLink, BookOpen, BookOpenCheck, RefreshCw, GraduationCap } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, MessageSquare, FileText, Languages, FileOutput, CheckCircle2, AlertCircle, ExternalLink, BookOpen, BookOpenCheck, RefreshCw, GraduationCap, ListPlus, ChevronDown } from 'lucide-react';
 import { formatPDFText } from '@/lib/text-formatter';
 import { cleanMarkdown } from '@/lib/markdown-cleaner';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +19,7 @@ interface Paper {
   summary?: string;
   createdAt: string;
   googleScholarUrl?: string;
+  literatureId?: number | null;
 }
 
 interface ChineseSummary {
@@ -113,6 +114,11 @@ export default function PaperReaderPage() {
   const [isGeneratingReadings, setIsGeneratingReadings] = useState(false);
   const [readingsProgress, setReadingsProgress] = useState({ total: 0, completed: 0, failed: 0 });
 
+  // Reading list integration state (SPEC-003 UI tail)
+  const [readingLists, setReadingLists] = useState<Array<{ id: number; name: string }>>([]);
+  const [showListDropdown, setShowListDropdown] = useState(false);
+  const [addingToListId, setAddingToListId] = useState<number | null>(null);
+
   useEffect(() => {
     fetchPaper();
     fetchChatHistory();
@@ -141,6 +147,61 @@ export default function PaperReaderPage() {
       console.error('Error loading paper:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Reading list handlers (SPEC-003 UI tail): fetch user's lists, add paper.
+  // Uses paper's literatureId to bridge uploaded paper → literature system.
+  const fetchReadingLists = async () => {
+    try {
+      const res = await fetch('/api/reading-lists');
+      const data = await res.json();
+      const lists = data.reading_lists || data.readingLists || [];
+      setReadingLists(lists);
+    } catch (e) {
+      console.error('Failed to load reading lists:', e);
+    }
+  };
+
+  const handleAddToReadingList = async (listId: number) => {
+    // literatureId may come as camelCase or snake_case depending on the API layer.
+    const litId = paper?.literatureId ?? (paper as any)?.literature_id;
+    if (!litId) {
+      toast({
+        title: '无法加入阅读列表',
+        description: '该论文尚未关联文献系统,请稍后重试',
+        variant: 'destructive',
+      });
+      setShowListDropdown(false);
+      return;
+    }
+    setAddingToListId(listId);
+    try {
+      const res = await fetch(`/api/reading-lists/${listId}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ literature_id: litId, priority: 'medium' }),
+      });
+      const data = await res.json();
+      if (res.status === 409) {
+        toast({ title: '该论文已在此列表中' });
+      } else if (!res.ok) {
+        throw new Error(data.error || '加入失败');
+      } else {
+        toast({
+          title: '已加入阅读列表',
+          description: '可在「阅读列表」页查看',
+        });
+      }
+    } catch (e: any) {
+      toast({
+        title: '加入失败',
+        description: e.message || '请重试',
+        variant: 'destructive',
+      });
+    } finally {
+      setAddingToListId(null);
+      setShowListDropdown(false);
     }
   };
 
@@ -621,6 +682,44 @@ export default function PaperReaderPage() {
                 </>
               )}
             </Button>
+            {/* 加入阅读列表(SPEC-003 UI) — 通过 literatureId 桥接上传论文 */}
+            <div className="relative">
+              <Button
+                onClick={() => {
+                  if (!showListDropdown) fetchReadingLists();
+                  setShowListDropdown(!showListDropdown);
+                }}
+                variant="outline"
+                className="gap-2"
+              >
+                <ListPlus className="w-4 h-4" />
+                加入阅读列表
+                <ChevronDown className="w-3.5 h-3.5" />
+              </Button>
+              {showListDropdown && (
+                <div className="absolute right-0 top-full mt-1 w-56 bg-card border border-border rounded-lg shadow-lg z-20 overflow-hidden">
+                  {readingLists.length === 0 ? (
+                    <div className="p-3 text-sm text-muted-foreground text-center">
+                      暂无阅读列表
+                      <br />
+                      <a href="/reading-lists" className="text-accent underline">去创建</a>
+                    </div>
+                  ) : (
+                    readingLists.map((list) => (
+                      <button
+                        key={list.id}
+                        onClick={() => handleAddToReadingList(list.id)}
+                        disabled={addingToListId === list.id}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-secondary flex items-center justify-between disabled:opacity-50"
+                      >
+                        <span className="truncate">{list.name}</span>
+                        {addingToListId === list.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
