@@ -28,6 +28,19 @@ interface CitationData {
 }
 
 /**
+ * Normalize a DOI into the canonical URL form https://doi.org/<doi>.
+ * Handles inputs that already carry the prefix (avoiding the
+ * "https://doi.org/https://doi.org/..." double-prefix bug) and trims
+ * whitespace. Returns null for empty input.
+ */
+function normalizeDoiUrl(doi: string | null | undefined): string | null {
+  if (!doi || !doi.trim()) return null;
+  const bare = doi.trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '');
+  if (!bare) return null;
+  return `https://doi.org/${bare}`;
+}
+
+/**
  * Format authors for citation
  */
 function formatAuthors(authors: Array<{ name: string }>, format: 'apa' | 'mla' | 'chicago' | 'harvard' | 'vancouver'): string {
@@ -128,14 +141,41 @@ function formatSingleAuthor(name: string, format: string): string {
 }
 
 /**
- * Convert title to sentence case (only first word and proper nouns capitalized)
+ * Convert title to sentence case per APA 7 rules:
+ * - lowercase the whole title, then capitalize the first letter
+ * - capitalize the first letter after a colon
+ * - capitalize the first letter after a hyphen (e.g. "STI-571" stays,
+ *   "state-of-the-art" -> "State-of-the-Art")
+ * - keep known acronyms/proper nouns uppercase
+ * Critically, this must NOT merge or drop words (a previous buggy
+ * implementation produced "Clinicalresistance" from "Clinical Resistance").
  */
 function toSentenceCase(title: string): string {
-  // For now, just lowercase everything except first word
-  const words = title.trim().split(/\s+/);
-  if (words.length === 0) return '';
-  return words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase() +
-    words.slice(1).join(' ').toLowerCase();
+  if (!title) return '';
+  const result = title.toLowerCase();
+
+  // Capitalize first character
+  let out = result.charAt(0).toUpperCase() + result.slice(1);
+
+  // Capitalize after colon ("subtitle: part two" -> "Subtitle: Part two")
+  out = out.replace(/:\s*([a-z])/g, (_m, c) => `: ${c.toUpperCase()}`);
+
+  // Capitalize after hyphen ("sti-571" stays lowercase numbers; "well-being"
+  // -> "Well-Being"). APA capitalizes the word after a hyphen.
+  out = out.replace(/([a-z])-([a-z])/g, (_m, a, b) => `${a}-${b.toUpperCase()}`);
+
+  // Restore known acronyms / proper nouns
+  const keepers = [
+    'STI', 'BCR', 'ABL', 'DNA', 'RNA', 'mRNA', 'CRISPR', 'AI', 'ML', 'NLP',
+    'BERT', 'GPT', 'LLM', 'CNN', 'RNN', 'LSTM', 'GAN', 'API', 'HTTP', 'HTTPS',
+    'URL', 'DOI', 'IEEE', 'ACM', '3D', '2D', 'COVID',
+  ];
+  for (const k of keepers) {
+    const re = new RegExp(`\\b${k.toLowerCase()}\\b`, 'g');
+    out = out.replace(re, k);
+  }
+
+  return out;
 }
 
 /**
@@ -166,8 +206,9 @@ function generateAPA(data: CitationData): string {
     }
   }
 
-  if (data.doi) {
-    citation += `. https://doi.org/${data.doi}`;
+  const doiUrl = normalizeDoiUrl(data.doi);
+  if (doiUrl) {
+    citation += `. ${doiUrl}`;
   }
 
   return citation;
@@ -178,7 +219,9 @@ function generateAPA(data: CitationData): string {
  * Format: Author Last, First, et al. "Article title." Journal Name Volume.Issue (Year): pages.
  */
 function generateMLA(data: CitationData): string {
-  const authors = formatAuthors(data.authors, 'mla');
+  // formatAuthors returns "et al." with a trailing period for 3+ authors;
+  // strip a trailing period so we don't produce "et al.." below.
+  const authors = formatAuthors(data.authors, 'mla').replace(/\.+$/, '');
   const year = data.publication_date ? new Date(data.publication_date).getFullYear() : '';
   const title = `"${toSentenceCase(data.title)}"`;
   const journal = data.journal || '';
@@ -209,16 +252,50 @@ function generateMLA(data: CitationData): string {
 
 /**
  * Generate Chicago citation (author-date style)
- * Format: Author Last Name, First Name, and Author Next Name. Year. "Article title." Journal Name Volume, no. Issue (Year): pages.
+ * Format: Author Last, First, and Author First Last. Year. "Article title." Journal Name volume, no. Issue (Year): pages.
+ * First author uses "Last, First"; subsequent authors use "First Last" (NOT reversed).
  */
 function generateChicago(data: CitationData): string {
-  const authors = formatAuthors(data.authors, 'chicago');
   const year = data.publication_date ? new Date(data.publication_date).getFullYear() : '';
   const title = `"${toSentenceCase(data.title)}"`;
   const journal = data.journal || '';
   const volume = data.volume || '';
   const issue = data.issue || '';
   const pages = data.pages || '';
+
+  // Chicago-specific author formatting:
+  // first author = "Last, First"; subsequent = "First Last"
+  const splitName = (name: string): { last: string; first: string } => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 0) return { last: 'Unknown', first: '' };
+    return { last: parts[parts.length - 1], first: parts.slice(0, -1).join(' ') };
+  };
+
+  let authors: string;
+  if (!data.authors || data.authors.length === 0) {
+    authors = 'Unknown Author';
+  } else if (data.authors.length === 1) {
+    const a = splitName(data.authors[0].name);
+    authors = a.first ? `${a.last}, ${a.first}` : a.last;
+  } else if (data.authors.length <= 10) {
+    // first reversed, rest in natural order, last joined with "and"
+    const first = splitName(data.authors[0].name);
+    const firstName = first.first ? `${first.last}, ${first.first}` : first.last;
+    const rest = data.authors.slice(1).map(a => {
+      const r = splitName(a.name);
+      return r.first ? `${r.first} ${r.last}` : r.last;
+    });
+    if (rest.length === 1) {
+      authors = `${firstName} and ${rest[0]}`;
+    } else {
+      authors = `${firstName}, ${rest.slice(0, -1).join(', ')}, and ${rest[rest.length - 1]}`;
+    }
+  } else {
+    // 10+ authors: first author + et al.
+    const first = splitName(data.authors[0].name);
+    const firstName = first.first ? `${first.last}, ${first.first}` : first.last;
+    authors = `${firstName} et al.`;
+  }
 
   let citation = `${authors}. ${year}. ${title}`;
 
