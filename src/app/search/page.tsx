@@ -77,6 +77,11 @@ export default function AcademicSearchPage() {
   const [translatedTerms, setTranslatedTerms] = useState<string[]>([]);
   const [isTranslatingQuery, setIsTranslatingQuery] = useState(false);
 
+  // Per-paper PDF lookup state: tracks which paper is currently being looked
+  // up and resolved PDF URLs (keyed by paper id or source-index).
+  const [findingPdfId, setFindingPdfId] = useState<string | number>('');
+  const [resolvedPdfUrls, setResolvedPdfUrls] = useState<Record<string, string>>({});
+
   // Quick note dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
@@ -494,6 +499,46 @@ export default function AcademicSearchPage() {
     setNoteDialogOpen(true);
   };
 
+  // Look up a legal open-access PDF for a paper via Unpaywall (on demand).
+  const handleFindPdf = async (paper: Paper, result: SearchResult, index: number) => {
+    const paperKey = paper.id || `${result.source}-${index}`;
+    // If we already resolved a URL, just open it.
+    const existing = resolvedPdfUrls[paperKey] || paper.pdfUrl;
+    if (existing) {
+      window.open(existing, '_blank');
+      return;
+    }
+    if (!paper.doi) {
+      safeToast({
+        title: "无法查找 PDF",
+        description: "该论文没有 DOI，无法查询开放获取版本。",
+      });
+      return;
+    }
+    setFindingPdfId(paperKey);
+    try {
+      const response = await fetch(`/api/literature/pdf?doi=${encodeURIComponent(paper.doi)}`);
+      const data = await response.json();
+      if (data.found && data.pdfUrl) {
+        setResolvedPdfUrls(prev => ({ ...prev, [paperKey]: data.pdfUrl }));
+        window.open(data.pdfUrl, '_blank');
+      } else {
+        safeToast({
+          title: "未找到免费 PDF",
+          description: data.message || "未找到合法开放获取的 PDF，可能需要机构订阅。",
+        });
+      }
+    } catch (err) {
+      safeToast({
+        variant: "destructive",
+        title: "查找失败",
+        description: "PDF 查询服务暂时不可用，请稍后重试。",
+      });
+    } finally {
+      setFindingPdfId('');
+    }
+  };
+
   const handleClearSearch = () => {
     setQuery('');
     setResults([]);
@@ -904,6 +949,33 @@ export default function AcademicSearchPage() {
                           </div>
 
                           <div className="flex gap-2">
+                            {/* PDF: open existing pdfUrl, or look up via Unpaywall on demand */}
+                            {(resolvedPdfUrls[`${result.source}-${index}`] || paper.id && resolvedPdfUrls[paper.id] || paper.pdfUrl) ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const url = resolvedPdfUrls[`${result.source}-${index}`] || (paper.id && resolvedPdfUrls[paper.id]) || paper.pdfUrl;
+                                  if (url) window.open(url, '_blank');
+                                }}
+                              >
+                                📄 PDF
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleFindPdf(paper, result, index)}
+                                disabled={findingPdfId === (paper.id || index)}
+                                title={paper.doi ? "通过 Unpaywall 查询合法开放获取 PDF" : "该论文无 DOI，无法查询"}
+                              >
+                                {findingPdfId === (paper.id || index) ? (
+                                  <><Loader2 className="w-3 h-3 mr-1 animate-spin" />查找中...</>
+                                ) : (
+                                  <>📄 找PDF</>
+                                )}
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
