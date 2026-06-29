@@ -9,6 +9,22 @@ import { getAIManager } from '@/lib/ai';
 // Note: per-process; a multi-instance deployment would need a shared store.
 const summaryInProgress = new Set<number>();
 
+/**
+ * Safely parse a stored summary JSON. If the stored value is corrupted
+ * (e.g. legacy data from before the parser was fixed, or a manual DB edit),
+ * return null instead of throwing — so the caller can ask the user to
+ * regenerate rather than returning a raw HTTP 500.
+ */
+function safeParseSummary(raw: string | null | undefined): Record<string, unknown> | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    console.error('[Summary] Stored summary JSON is corrupted, returning null');
+    return null;
+  }
+}
+
 // GET - Retrieve existing summary
 export async function GET(
   request: NextRequest,
@@ -36,8 +52,19 @@ export async function GET(
       return NextResponse.json({ error: 'No summary found' }, { status: 404 });
     }
 
+    // Stored summary may be corrupted JSON (legacy data / manual edits).
+    const parsed = safeParseSummary(paper.summary);
+    if (!parsed) {
+      return NextResponse.json({
+        error: 'Stored summary is corrupted',
+        degraded: true,
+        corrupted: true,
+        message: '摘要数据已损坏，请重新生成摘要。',
+      }, { status: 422 });
+    }
+
     return NextResponse.json({
-      summary: JSON.parse(paper.summary),
+      summary: parsed,
       cached: true,
     });
   } catch (error) {
@@ -80,10 +107,15 @@ export async function POST(
     // Check if summary already exists (skip when ?force=1 to regenerate)
     const forceRegenerate = request.nextUrl.searchParams.get('force') === '1';
     if (paper.summary && !forceRegenerate) {
-      return NextResponse.json({
-        summary: JSON.parse(paper.summary),
-        cached: true,
-      });
+      const cachedSummary = safeParseSummary(paper.summary);
+      if (cachedSummary) {
+        return NextResponse.json({
+          summary: cachedSummary,
+          cached: true,
+        });
+      }
+      // Corrupted cache: fall through to regenerate instead of returning 500.
+      console.warn('[Summary] Corrupted cache detected, regenerating for paper', paperId);
     }
 
     // Guard against concurrent duplicate generation (double AI call / billing).
