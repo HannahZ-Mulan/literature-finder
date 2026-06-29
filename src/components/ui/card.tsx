@@ -9,7 +9,10 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      // 玻璃态基底(SPEC-004):半透明 + backdrop-blur + 暖琥珀阴影。
+      // 静止不飘——只 hover 时微抬 -3px。
+      // bg-card/62 让 --card 变量带 62% 不透明度,保留与 globals.css 的兼容。
+      "rounded-2xl border border-white/70 bg-card/62 backdrop-blur-[16px] text-card-foreground shadow-[0_8px_28px_-14px_hsl(40_76%_40%/0.18)] transition-all duration-300 hover:-translate-y-[3px] hover:border-amber-200/60 hover:shadow-[0_18px_40px_-16px_hsl(40_76%_40_/0.32)]",
       className
     )}
     {...props}

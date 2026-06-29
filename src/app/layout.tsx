@@ -31,12 +31,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className={`${inter.variable} ${fraunces.variable}`}>
-      <body className="font-sans antialiased">
-        <AuthProvider>
-          <Navigation />
-          {children}
-          <Toaster />
-        </AuthProvider>
+      <body className="warm-glow-bg font-sans antialiased">
+        <div className="relative z-10">
+          <AuthProvider>
+            <Navigation />
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </div>
       </body>
     </html>
   );

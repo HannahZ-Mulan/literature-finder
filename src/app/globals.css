@@ -6,6 +6,104 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* ===== SPEC-004: 玻璃态渐变边框(glass-glow) =====
+     用 mask 技术实现琥珀渐变描边,可选应用到 Card(className 传入)。
+     hover 时边框点亮(opacity 0.7 → 1)。 */
+  .glass-glow {
+    position: relative;
+  }
+  .glass-glow::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(
+      135deg,
+      hsl(40 76% 40% / 0.45),
+      transparent 35%,
+      transparent 65%,
+      hsl(28 52% 50% / 0.35)
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+    z-index: 0;
+  }
+  .glass-glow:hover::before {
+    opacity: 1;
+  }
+
+  /* ===== SPEC-004: 全局暖光背景(warm-glow-bg) =====
+     两个固定暖光 blob(琥珀 + 陶土),缓慢流动。
+     应用于 body,卡片悬浮在光中。背景流动但卡片静止。 */
+  .warm-glow-bg {
+    position: relative;
+  }
+  .warm-glow-bg::before,
+  .warm-glow-bg::after {
+    content: "";
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    z-index: 0;
+    pointer-events: none;
+  }
+  .warm-glow-bg::before {
+    width: 520px;
+    height: 520px;
+    background: hsl(45 76% 75% / 0.38);
+    top: -120px;
+    right: -120px;
+    animation: warm-drift-1 20s ease-in-out infinite;
+  }
+  .warm-glow-bg::after {
+    width: 420px;
+    height: 420px;
+    background: hsl(28 52% 55% / 0.22);
+    bottom: -120px;
+    left: 8%;
+    animation: warm-drift-2 24s ease-in-out infinite;
+  }
+  @keyframes warm-drift-1 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-50px, 30px); }
+  }
+  @keyframes warm-drift-2 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(70px, -40px); }
+  }
+
+  /* ===== SPEC-004: 按钮琥珀扫光(btn-shine) =====
+     primary 按钮 hover 时琥珀高光从左扫过。
+     应用于 Button primary variant。 */
+  .btn-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-shine::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(45 76% 75% / 0.3),
+      transparent
+    );
+    transition: left 0.5s ease;
+    pointer-events: none;
+  }
+  .btn-shine:hover::after {
+    left: 120%;
+  }
 }
 
 

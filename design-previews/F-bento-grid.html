@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方向 B · 不规则 Bento Grid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf6ec; --paper:#fffdf6; --ink:#1c1812; --ink-2:#6b604c; --muted:#8a7d5e;
+    --amber:#b07d12; --amber-soft:#e7c878; --amber-deep:#8a5e0a;
+    --rust:#a64b2a; --sage:#5e6e4a; --clay:#c1845a; --line:#d9cfb8;
+    --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.6;
+    background-image:radial-gradient(1000px 500px at 50% -10%, #fff3d280 0%, transparent 60%);}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 28px 80px}
+  .serif{font-family:var(--serif)}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:600}
+  .hero-title{font-family:var(--serif);font-size:34px;font-weight:500;margin:8px 0 6px}
+  .hero-sub{color:var(--ink-2);margin-bottom:36px;max-width:560px}
+
+  /* ===== 方向 B 核心手法:不规则 Bento 拼贴 =====
+     - 每个卡片尺寸/比例/形状都不同(大/小/宽/高/圆/方)
+     - 像便当盒分区,视觉趣味强,信息密度高
+     - 圆角不统一(8/14/20/28px 混用)打破方框感
+     - hover 时卡片"亮起"边框光 + 内容微动
+  */
+  .bento{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    grid-auto-rows:130px;
+    gap:14px;
+  }
+  .cell{
+    background:var(--paper);border:1px solid var(--line);
+    padding:22px 24px;overflow:hidden;position:relative;cursor:pointer;
+    transition:all .35s cubic-bezier(.2,.8,.2,1);
+  }
+  .cell:hover{transform:translateY(-3px) scale(1.01);border-color:var(--amber-soft);
+    box-shadow:0 18px 36px -24px rgba(176,125,18,.45);}
+  /* 圆角混搭 */
+  .r8{border-radius:8px}.r14{border-radius:14px}.r20{border-radius:20px}.r28{border-radius:28px}
+  .r-tl28{border-top-left-radius:28px}.r-br28{border-bottom-right-radius:28px}
+
+  /* 主大卡:占 2x2 */
+  .feat-main{grid-column:span 2;grid-row:span 2;display:flex;flex-direction:column;justify-content:space-between;
+    background:linear-gradient(160deg,#fffdf6 0%,#fff6dc 100%);}
+  .feat-main::before{content:"";position:absolute;top:0;right:0;width:50%;height:100%;
+    background:radial-gradient(circle at 70% 30%, rgba(231,200,120,.3), transparent 65%);}
+  .feat-main .ico{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;font-size:26px;
+    background:linear-gradient(135deg,var(--amber),var(--amber-deep));color:#fff;box-shadow:0 10px 24px -10px rgba(176,125,18,.6)}
+  .feat-main h3{font-family:var(--serif);font-size:26px;font-weight:500;margin:14px 0 8px;position:relative}
+  .feat-main p{color:var(--ink-2);font-size:14px;max-width:90%;position:relative}
+  .feat-main .btns{display:flex;gap:8px;margin-top:12px;position:relative}
+  .btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .2s}
+  .btn-pri{background:var(--ink);color:#fbf6e9}.btn-pri:hover{background:#2a2418}
+  .btn-gh{background:rgba(255,255,255,.6);border:1px solid var(--line);color:var(--ink)}
+
+  /* 标准卡 */
+  .ico-sq{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:17px;color:#fff;margin-bottom:10px}
+  .c-amber{background:linear-gradient(135deg,var(--amber),var(--amber-deep))}
+  .c-rust{background:linear-gradient(135deg,#c4654a,var(--rust))}
+  .c-sage{background:linear-gradient(135deg,#7d9070,var(--sage))}
+  .c-clay{background:linear-gradient(135deg,#d4a07a,var(--clay))}
+  .cell h4{font-family:var(--serif);font-size:16px;font-weight:500;margin-bottom:4px}
+  .cell p{font-size:12px;color:var(--ink-2);line-height:1.5}
+
+  /* 宽卡:跨 2 列 */
+  .wide{grid-column:span 2;display:flex;align-items:center;gap:16px}
+  .wide .ico-sq{margin-bottom:0;flex-shrink:0}
+
+  /* 高卡 */
+  .tall{grid-row:span 2;display:flex;flex-direction:column;justify-content:space-between}
+  .tall .meter{width:100%;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:8px}
+  .tall .meter span{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--amber-soft));border-radius:3px}
+
+  /* 数字卡(无标题,纯数据) */
+  .stat-only{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+  .stat-only .n{font-family:var(--serif);font-size:38px;font-weight:500;color:var(--amber);line-height:1}
+  .stat-only .l{font-size:11px;color:var(--muted);margin-top:5px;letter-spacing:.05em}
+
+  /* 渐变背景卡 */
+  .grad-sage{background:linear-gradient(160deg,#f0f3ec,#e3e9d6);border-color:#d4dcc0}
+  .grad-clay{background:linear-gradient(160deg,#faf0e8,#f0dcc8);border-color:#e8d0bc}
+
+  /* 角标序号 */
+  .num{position:absolute;top:14px;right:16px;font-family:var(--serif);font-style:italic;font-size:13px;color:var(--line)}
+  .cell:hover .num{color:var(--amber-soft)}
+
+  @media(max-width:780px){
+    .bento{grid-template-columns:repeat(2,1fr)}
+    .feat-main{grid-column:span 2;grid-row:span 1}
+    .wide{grid-column:span 2}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">方向 B · Bento Grid</div>
+  <h1 class="hero-title serif">不规则便当 · 每张卡都独特</h1>
+  <p class="hero-sub">像日式便当盒分区——卡片尺寸、比例、圆角都不同。大卡承载主功能,小卡密集排布。视觉趣味强,信息密度高,告别千篇一律的方框。</p>
+
+  <div class="bento">
+    <!-- 主大卡 2x2 -->
+    <div class="cell feat-main r20">
+      <span class="num">01</span>
+      <div>
+        <div class="ico">✦</div>
+        <h3>AI 中文深读</h3>
+        <p>结构化拆解方法、证据与结论,生成可追溯的中文研读笔记。AI 基于原文作答并标注引用。</p>
+      </div>
+      <div class="btns">
+        <button class="btn btn-pri">开始解读</button>
+        <button class="btn btn-gh">示例</button>
+      </div>
+    </div>
+
+    <!-- 标准卡 -->
+    <div class="cell r14"><span class="num">02</span><div class="ico-sq c-amber">⇄</div><h4>段落翻译</h4><p>选中即译,术语精准</p></div>
+    <div class="cell r-tl28"><span class="num">03</span><div class="ico-sq c-sage">💬</div><h4>AI 问答</h4><p>追问原文细节</p></div>
+
+    <!-- 宽卡 跨2列 -->
+    <div class="cell wide r14 grad-sage">
+      <span class="num">04</span>
+      <div class="ico-sq c-sage">📊</div>
+      <div>
+        <h4>研究质量判断</h4>
+        <p>样本量充足 · 证据充分 · 多敏感性分析稳定</p>
+      </div>
+    </div>
+
+    <!-- 高卡 -->
+    <div class="cell tall r28">
+      <div>
+        <span class="num">05</span>
+        <div class="ico-sq c-clay">📚</div>
+        <h4>文献关联</h4>
+        <p>跨论文语义检索,发现引用网络</p>
+      </div>
+      <div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:4px">已索引段落</p>
+        <div class="meter"><span style="width:68%"></span></div>
+      </div>
+    </div>
+
+    <!-- 数字卡 -->
+    <div class="cell stat-only r8"><div class="n">A+</div><div class="l">综合评分</div></div>
+
+    <!-- 标准卡 -->
+    <div class="cell r-br28 grad-clay"><span class="num">06</span><div class="ico-sq c-clay">📝</div><h4>智能笔记</h4><p>结构化 + 标签</p></div>
+    <div class="cell r14"><span class="num">07</span><div class="ico-sq c-rust">🏷</div><h4>分类标签</h4><p>智能推荐</p></div>
+    <div class="cell r20"><span class="num">08</span><div class="ico-sq c-amber">⤓</div><h4>引用导出</h4><p>DOI 自动补全</p></div>
+  </div>
+</div>
+</body>
+</html>

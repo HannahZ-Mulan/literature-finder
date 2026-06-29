@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方向 C · 浮动玻璃 Glass Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf6ec; --paper:#fffdf6; --ink:#1c1812; --ink-2:#6b604c; --muted:#8a7d5e;
+    --amber:#b07d12; --amber-soft:#e7c878; --amber-light:#fdf0cc; --amber-deep:#8a5e0a;
+    --rust:#a64b2a; --sage:#5e6e4a; --clay:#c1845a; --line:#d9cfb8;
+    --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.6;min-height:100vh;overflow-x:hidden;position:relative}
+  /* 动态暖光背景 — 玻璃感的基础 */
+  body::before,body::after{content:"";position:fixed;border-radius:50%;filter:blur(80px);z-index:0;pointer-events:none}
+  body::before{width:500px;height:500px;background:rgba(231,200,120,.4);top:-100px;right:-100px;animation:drift1 18s ease-in-out infinite}
+  body::after{width:400px;height:400px;background:rgba(200,134,90,.25);bottom:-100px;left:10%;animation:drift2 22s ease-in-out infinite}
+  @keyframes drift1{0%,100%{transform:translate(0,0)}50%{transform:translate(-60px,40px)}}
+  @keyframes drift2{0%,100%{transform:translate(0,0)}50%{transform:translate(80px,-50px)}}
+
+  .wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:40px 28px 80px}
+  .serif{font-family:var(--serif)}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:600}
+  .hero-title{font-family:var(--serif);font-size:34px;font-weight:500;margin:8px 0 6px}
+  .hero-sub{color:var(--ink-2);margin-bottom:40px;max-width:560px}
+
+  /* ===== 方向 C 核心手法:玻璃态浮动卡 =====
+     - 半透明 + backdrop-blur,卡片像悬浮在暖光中
+     - 渐变边框光(琥珀色描边),hover 时边框点亮
+     - 柔和阴影 + 微浮动动画,营造"智能""轻盈"
+     - 主卡带旋转的 AI 光环,强化智能感
+  */
+  .glass{
+    background:rgba(255,253,246,.55);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,.7);
+    border-radius:20px;padding:26px 28px;position:relative;overflow:hidden;
+    box-shadow:0 8px 32px -12px rgba(176,125,18,.15), 0 1px 0 rgba(255,255,255,.9) inset;
+    transition:all .4s cubic-bezier(.2,.8,.2,1);
+  }
+  /* 玻璃卡的渐变边框光(双层技术) */
+  .glass.glow::before{
+    content:"";position:absolute;inset:0;border-radius:20px;padding:1.5px;
+    background:linear-gradient(135deg,rgba(176,125,18,.5),transparent 40%,transparent 60%,rgba(200,134,90,.4));
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;
+    opacity:.6;transition:opacity .4s;
+  }
+  .glass:hover{
+    transform:translateY(-4px);
+    box-shadow:0 20px 48px -16px rgba(176,125,18,.3), 0 1px 0 rgba(255,255,255,.9) inset;
+  }
+  .glass.glow:hover::before{opacity:1}
+
+  /* 主卡:大尺寸 + AI 旋转光环 */
+  .hero-glass{margin-bottom:16px;padding:36px 40px}
+  .hero-glass .ai-orb{
+    width:60px;height:60px;border-radius:50%;position:relative;margin-bottom:18px;
+    background:conic-gradient(from 0deg,var(--amber),var(--clay),var(--rust),var(--amber));
+    animation:spin 6s linear infinite;
+  }
+  .hero-glass .ai-orb::after{content:"✦";position:absolute;inset:5px;border-radius:50%;background:var(--paper);
+    display:grid;place-items:center;font-size:24px;color:var(--amber)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hero-glass h3{font-family:var(--serif);font-size:26px;font-weight:500;margin-bottom:10px}
+  .hero-glass p{color:var(--ink-2);font-size:15px;max-width:480px}
+  .hero-glass .btns{display:flex;gap:10px;margin-top:20px}
+  .btn{padding:10px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .2s}
+  .btn-pri{background:linear-gradient(135deg,var(--ink),#2a2418);color:#fbf6e9}
+  .btn-pri:hover{transform:translateY(-1px);box-shadow:0 12px 24px -10px rgba(28,24,18,.5)}
+  .btn-gh{background:rgba(255,255,255,.5);border:1px solid rgba(176,125,18,.3);color:var(--ink)}
+  .btn-gh:hover{border-color:var(--amber)}
+
+  /* 网格 */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  .feat .ico-box{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:20px;margin-bottom:14px;
+    background:linear-gradient(135deg,var(--amber-light),#f3e0a8);color:var(--amber-deep);
+    box-shadow:0 6px 16px -8px rgba(176,125,18,.4)}
+  .feat.f-sage .ico-box{background:linear-gradient(135deg,#e8ecdde,#d4dcc0);color:var(--sage)}
+  .feat.f-clay .ico-box{background:linear-gradient(135deg,#faf0e8,#f0dcc8);color:var(--clay)}
+  .feat.f-rust .ico-box{background:linear-gradient(135deg,#f6e0d6,#e8c4b0);color:var(--rust)}
+  .feat h4{font-family:var(--serif);font-size:17px;font-weight:500;margin-bottom:6px}
+  .feat p{font-size:13px;color:var(--ink-2)}
+  .feat .tag{position:absolute;top:16px;right:18px;font-size:11px;font-weight:600;letter-spacing:.05em;
+    padding:3px 9px;border-radius:6px;background:rgba(176,125,18,.12);color:var(--amber-deep)}
+
+  /* 微浮动动画(不同卡片不同相位,营造灵动) */
+  .float-1{animation:floaty 4s ease-in-out infinite}
+  .float-2{animation:floaty 4s ease-in-out infinite -1.3s}
+  .float-3{animation:floaty 4s ease-in-out infinite -2.6s}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+  /* 评估卡:左右对比,带数据条 */
+  .assess{padding:30px 34px}
+  .assess-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .assess-head h4{font-family:var(--serif);font-size:20px;font-weight:500}
+  .assess-badge{padding:5px 14px;border-radius:8px;background:rgba(94,110,74,.18);color:#3d6b2a;font-size:13px;font-weight:600}
+  .assess-body{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center}
+  .assess-body p{font-size:13px;color:var(--ink-2)}
+  .score-ring{width:90px;height:90px;border-radius:50%;display:grid;place-items:center;
+    background:conic-gradient(var(--amber) 0deg 320deg,var(--bg) 320deg 360deg);
+    position:relative}
+  .score-ring::before{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--paper)}
+  .score-ring span{position:relative;font-family:var(--serif);font-size:24px;font-weight:500;color:var(--amber)}
+
+  @media(max-width:780px){.grid3,.grid2,.assess-body{grid-template-columns:1fr}.hero-glass{padding:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">方向 C · Glass Cards</div>
+  <h1 class="hero-title serif">浮动玻璃 · 悬浮在暖光中的智能感</h1>
+  <p class="hero-sub">半透明玻璃态 + 背景柔光流动 + 琥珀渐变边框。卡片像悬浮在光中,带微浮动动画和 AI 旋转光环,营造轻盈的未来感。hover 时边框点亮、卡片升起。</p>
+
+  <!-- 主玻璃卡 -->
+  <div class="glass glow hero-glass float-1">
+    <div class="ai-orb"></div>
+    <h3>AI 中文深读</h3>
+    <p>把英文论文的结构化拆解理成可理解的脉络,生成可追溯的中文研读笔记。AI 基于原文作答并标注引用位置。</p>
+    <div class="btns">
+      <button class="btn btn-pri">开始解读 →</button>
+      <button class="btn btn-gh">查看示例</button>
+    </div>
+  </div>
+
+  <!-- 3 卡网格 -->
+  <div class="grid3">
+    <div class="glass glow feat float-1">
+      <span class="tag">语义</span>
+      <div class="ico-box">⇄</div>
+      <h4>段落翻译</h4>
+      <p>选中即译,保留术语精度,贴合学术阅读。</p>
+    </div>
+    <div class="glass glow feat f-sage float-2">
+      <span class="tag" style="background:rgba(94,110,74,.15);color:var(--sage)">问答</span>
+      <div class="ico-box">💬</div>
+      <h4>可追问助手</h4>
+      <p>对任何细节发问,AI 从原文作答并注明出处。</p>
+    </div>
+    <div class="glass glow feat f-clay float-3">
+      <span class="tag" style="background:rgba(200,134,90,.15);color:var(--clay)">笔记</span>
+      <div class="ico-box">📝</div>
+      <h4>智能笔记</h4>
+      <p>结构化笔记 + 标签体系 + 关联文献。</p>
+    </div>
+  </div>
+
+  <!-- 2 卡网格 -->
+  <div class="grid2">
+    <div class="glass glow feat f-rust float-2">
+      <span class="tag" style="background:rgba(166,75,42,.15);color:var(--rust)">关联</span>
+      <div class="ico-box">📚</div>
+      <h4>文献关联网络</h4>
+      <p>跨论文语义检索,基于向量化全文理解发现相关研究与引用。</p>
+    </div>
+    <div class="glass glow assess float-3">
+      <div class="assess-head">
+        <h4>研究质量判断</h4>
+        <span class="assess-badge">高质量</span>
+      </div>
+      <div class="assess-body">
+        <p>样本量充足(n=1200),随机对照设计,统计严谨。多敏感性分析稳定。</p>
+        <div class="score-ring"><span>A+</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>融合方案 · A 布局 + C 玻璃 + 静止</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf6ec; --paper:#fffdf6; --ink:#1c1812; --ink-2:#6b604c; --muted:#8a7d5e;
+    --amber:#b07d12; --amber-soft:#e7c878; --amber-light:#fdf0cc; --amber-deep:#8a5e0a;
+    --rust:#a64b2a; --sage:#5e6e4a; --clay:#c1845a; --line:#d9cfb8;
+    --primary:#1c1812; --destructive:#a64b2a;
+    --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.6;min-height:100vh;overflow-x:hidden;position:relative}
+  /* 暖光背景(流动但卡片不飘) */
+  body::before,body::after{content:"";position:fixed;border-radius:50%;filter:blur(90px);z-index:0;pointer-events:none}
+  body::before{width:520px;height:520px;background:rgba(231,200,120,.38);top:-120px;right:-120px;animation:drift1 20s ease-in-out infinite}
+  body::after{width:420px;height:420px;background:rgba(200,134,90,.22);bottom:-120px;left:8%;animation:drift2 24s ease-in-out infinite}
+  @keyframes drift1{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,30px)}}
+  @keyframes drift2{0%,100%{transform:translate(0,0)}50%{transform:translate(70px,-40px)}}
+
+  .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:48px 24px 80px}
+  .serif{font-family:var(--serif)}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:600}
+  .page-title{font-family:var(--serif);font-size:30px;font-weight:500;margin:8px 0 6px;letter-spacing:-.015em}
+  .page-sub{color:var(--ink-2);margin-bottom:36px;font-size:14px}
+
+  /* ============================================
+     核心组件:玻璃 Card(A 布局结构 + C 玻璃质感 + 静止)
+     ============================================ */
+  /* GlassCard — 替代 shadcn Card 的底层 */
+  .glass-card{
+    background:rgba(255,253,246,.62);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.7);
+    border-radius:16px;padding:24px;position:relative;overflow:hidden;
+    box-shadow:0 8px 28px -14px rgba(176,125,18,.18), 0 1px 0 rgba(255,255,255,.9) inset;
+    transition:transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s, border-color .3s;
+  }
+  /* 渐变边框光(双层 mask 技术) */
+  .glass-card.glow::before{
+    content:"";position:absolute;inset:0;border-radius:16px;padding:1.5px;
+    background:linear-gradient(135deg,rgba(176,125,18,.45),transparent 35%,transparent 65%,rgba(200,134,90,.35));
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.7;
+    transition:opacity .3s;
+  }
+  .glass-card:hover{
+    transform:translateY(-3px); /* 静止——只 hover 时微抬,不持续飘 */
+    box-shadow:0 18px 40px -16px rgba(176,125,18,.32), 0 1px 0 rgba(255,255,255,.9) inset;
+    border-color:rgba(231,200,120,.6);
+  }
+  .glass-card.glow:hover::before{opacity:1}
+
+  /* 主卡(A 布局:大主卡承担核心) */
+  .glass-hero{padding:32px 36px;margin-bottom:14px}
+  .glass-hero .orb{
+    width:54px;height:54px;border-radius:50%;position:relative;margin-bottom:16px;
+    background:conic-gradient(from 0deg,var(--amber),var(--clay),var(--rust),var(--amber));
+    animation:spin 6s linear infinite;
+  }
+  .glass-hero .orb::after{content:"↑";position:absolute;inset:5px;border-radius:50%;background:var(--paper);
+    display:grid;place-items:center;font-size:22px;color:var(--amber);font-weight:600}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .glass-hero h3{font-family:var(--serif);font-size:23px;font-weight:500;margin-bottom:8px}
+  .glass-hero p{color:var(--ink-2);font-size:14px;max-width:460px;margin-bottom:18px}
+  .glass-hero .upload-zone{
+    border:2px dashed rgba(176,125,18,.35);border-radius:12px;padding:24px;text-align:center;
+    transition:all .25s;cursor:pointer;background:rgba(255,255,255,.3);
+  }
+  .glass-hero .upload-zone:hover{border-color:var(--amber);background:rgba(255,243,210,.4)}
+  .glass-hero .upload-zone .big-ico{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;
+    margin:0 auto 12px;font-size:22px;color:#fff;background:linear-gradient(135deg,var(--amber),var(--amber-deep));
+    box-shadow:0 8px 20px -8px rgba(176,125,18,.5)}
+
+  /* A 布局的次卡群:不对称 3 列 */
+  .cluster{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:12px;margin-bottom:14px}
+  .feat{padding:20px 22px;cursor:pointer}
+  .feat .ico{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:17px;margin-bottom:12px;color:#fff}
+  .feat.amber .ico{background:linear-gradient(135deg,var(--amber),var(--amber-deep))}
+  .feat.sage .ico{background:linear-gradient(135deg,#7d9070,var(--sage))}
+  .feat.clay .ico{background:linear-gradient(135deg,#d4a07a,var(--clay))}
+  .feat h4{font-family:var(--serif);font-size:16px;font-weight:500;margin-bottom:5px}
+  .feat p{font-size:12px;color:var(--ink-2);line-height:1.5}
+  .feat .num{position:absolute;top:14px;right:18px;font-family:var(--serif);font-style:italic;color:var(--line);font-size:13px}
+  .feat:hover .num{color:var(--amber-soft)}
+
+  /* ============================================
+     GlassButton — 升级 shadcn Button(全站统一)
+     ============================================ */
+  .gbtn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    padding:10px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;
+    transition:all .2s cubic-bezier(.2,.8,.2,1);font-family:inherit;
+  }
+  /* primary:墨色 + 琥珀高光 */
+  .gbtn-pri{background:linear-gradient(135deg,#2a2418,#1c1812);color:#fbf6e9;position:relative;overflow:hidden;
+    box-shadow:0 6px 16px -8px rgba(28,24,18,.5)}
+  .gbtn-pri::after{content:"";position:absolute;top:0;left:-100%;width:60%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(231,200,120,.25),transparent);
+    transition:left .5s}
+  .gbtn-pri:hover{transform:translateY(-1px);box-shadow:0 10px 22px -10px rgba(28,24,18,.6)}
+  .gbtn-pri:hover::after{left:120%}
+  /* secondary:玻璃描边 */
+  .gbtn-sec{background:rgba(255,253,246,.6);backdrop-filter:blur(8px);border:1px solid rgba(176,125,18,.3);color:var(--ink)}
+  .gbtn-sec:hover{border-color:var(--amber);background:rgba(255,243,210,.5);transform:translateY(-1px)}
+  /* destructive */
+  .gbtn-dstr{background:linear-gradient(135deg,#c4573a,var(--destructive));color:#fff}
+  .gbtn-dstr:hover{transform:translateY(-1px);box-shadow:0 8px 18px -8px rgba(166,75,42,.5)}
+  /* ghost */
+  .gbtn-gh{background:transparent;color:var(--ink-2)}
+  .gbtn-gh:hover{background:rgba(176,125,18,.1);color:var(--amber-deep)}
+  /* disabled */
+  .gbtn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+  /* 状态卡(upload 四态)— 用玻璃 + 语义色描边 */
+  .status{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+  .status .glass-card{padding:16px 18px}
+  .status .glass-card.up{border-left:3px solid var(--amber)}
+  .status .glass-card.parse{border-left:3px solid var(--sage)}
+  .status .glass-card.ok{border-left:3px solid #4a8a3a}
+  .status .glass-card.err{border-left:3px solid var(--destructive)}
+  .status .head{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:6px}
+  .status .head .spin{width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite}
+  .status .bar{height:5px;background:rgba(176,125,18,.15);border-radius:3px;overflow:hidden;margin-top:8px}
+  .status .bar span{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--amber-soft));border-radius:3px}
+
+  /* 对比区:旧 vs 新 */
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:24px;padding-top:24px;border-top:1px dashed var(--line)}
+  .vs-col h5{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;font-weight:600}
+  .old-card{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .old-btn{display:inline-block;padding:8px 16px;background:linear-gradient(to right,#2563eb,#9333ea);color:#fff;border-radius:6px;font-size:13px;font-weight:500}
+  .old-card h6{font-size:14px;font-weight:600;margin-bottom:6px;color:#333}
+  .old-card p{font-size:12px;color:#666}
+
+  @media(max-width:640px){.cluster,.status,.vs{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">融合方案 · A 布局 + C 玻璃 · 静止版</div>
+  <h1 class="page-title serif">上传论文 · 升级后的功能卡</h1>
+  <p class="page-sub">用你真实的 upload 页功能卡展示。主卡 + 次卡群(A 布局),玻璃质感 + 琥珀渐变边框(C 视觉),卡片静止不飘(只 hover 抬升)。下方有"旧 vs 新"对比。</p>
+
+  <!-- 主卡(A 布局:大主卡) -->
+  <div class="glass-card glass-hero glow">
+    <div class="orb"></div>
+    <h3>上传研究论文</h3>
+    <p>上传 PDF,AI 将自动提取、分块、生成中文摘要并同步到文献系统。</p>
+    <div class="upload-zone">
+      <div class="big-ico">↑</div>
+      <p style="font-weight:500;margin-bottom:4px">点击或拖拽 PDF 到此处</p>
+      <p style="font-size:12px;color:var(--muted)">支持单个文件,最大 50MB</p>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="gbtn gbtn-pri">↑ 上传论文</button>
+      <button class="gbtn gbtn-sec">粘贴文本</button>
+    </div>
+  </div>
+
+  <!-- 次卡群(A 布局:不对称 3 列) -->
+  <div class="cluster">
+    <div class="glass-card glow feat amber">
+      <span class="num">01</span>
+      <div class="ico">✦</div>
+      <h4>AI 自动解析</h4>
+      <p>提取全文 + 章节分块 + 中文摘要,无需手动操作</p>
+    </div>
+    <div class="glass-card glow feat sage">
+      <span class="num">02</span>
+      <div class="ico">📚</div>
+      <h4>语义索引</h4>
+      <p>自动向量化,可语义搜索</p>
+    </div>
+    <div class="glass-card glow feat clay">
+      <span class="num">03</span>
+      <div class="ico">🗂</div>
+      <h4>文献系统</h4>
+      <p>同步到 literature 体系</p>
+    </div>
+  </div>
+
+  <!-- 四态状态卡(用语义色描边区分,保持玻璃感) -->
+  <h5 style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:24px 0 10px;font-weight:600">上传流程四态状态卡</h5>
+  <div class="status">
+    <div class="glass-card up">
+      <div class="head" style="color:var(--amber)"><span class="spin"></span>正在上传...</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2)"><span>prosocial.pdf</span><span>64%</span></div>
+      <div class="bar"><span style="width:64%"></span></div>
+    </div>
+    <div class="glass-card parse">
+      <div class="head" style="color:var(--sage)"><span class="spin"></span>正在提取文本...</div>
+      <p style="font-size:12px;color:var(--ink-2)">AI 正在识别章节结构</p>
+    </div>
+    <div class="glass-card ok">
+      <div class="head" style="color:#4a8a3a">✓ 上传成功</div>
+      <p style="font-size:12px;color:var(--ink-2)">已生成 19 个段落 + 语义索引</p>
+    </div>
+    <div class="glass-card err">
+      <div class="head" style="color:var(--destructive)">⚠ 上传失败</div>
+      <p style="font-size:12px;color:var(--ink-2)">PDF 格式损坏,请重试</p>
+    </div>
+  </div>
+
+  <!-- 全站统一的 Button 升级 -->
+  <h5 style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:24px 0 10px;font-weight:600">全站统一的 GlassButton(5 种变体)</h5>
+  <div class="glass-card" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+    <button class="gbtn gbtn-pri">Primary 主操作</button>
+    <button class="gbtn gbtn-sec">Secondary 次操作</button>
+    <button class="gbtn gbtn-dstr">Destructive 危险</button>
+    <button class="gbtn gbtn-gh">Ghost 幽灵</button>
+    <button class="gbtn gbtn-pri" disabled>Disabled 禁用</button>
+  </div>
+
+  <!-- 旧 vs 新 对比 -->
+  <div class="vs">
+    <div class="vs-col">
+      <h5>❌ 升级前(旧的死板框架)</h5>
+      <div class="old-card">
+        <h6>上传研究论文</h6>
+        <p>上传PDF或粘贴文本,AI将自动提取和分析论文内容</p>
+        <div style="margin-top:12px"><span class="old-btn">上传论文</span></div>
+      </div>
+      <div class="old-card" style="margin-top:10px;background:#f0f7ff;border-color:#bfdbfe">
+        <h6 style="color:#1e40af">正在上传...</h6>
+        <div style="height:5px;background:#bfdbfe;border-radius:3px;margin-top:8px"><div style="height:100%;width:64%;background:linear-gradient(to right,#3b82f6,#9333ea);border-radius:3px"></div></div>
+      </div>
+    </div>
+    <div class="vs-col">
+      <h5>✅ 升级后(玻璃 + 琥珀)</h5>
+      <div class="glass-card glow" style="padding:18px">
+        <h6 style="font-family:var(--serif);font-size:15px;font-weight:500;margin-bottom:6px">上传研究论文</h6>
+        <p style="font-size:12px;color:var(--ink-2)">上传PDF,AI自动提取分析</p>
+        <div style="margin-top:12px"><span class="gbtn gbtn-pri" style="padding:8px 16px;font-size:13px">↑ 上传论文</span></div>
+      </div>
+      <div class="glass-card up" style="margin-top:10px;padding:16px">
+        <div class="head" style="color:var(--amber);font-size:13px"><span class="spin"></span>正在上传...</div>
+        <div class="bar"><span style="width:64%"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align:center;color:var(--muted);font-size:12px;margin-top:32px;line-height:1.7">
+    方案核心:升级 shadcn 底层 Card.tsx + Button.tsx 组件<br>
+    → 全站 150+ 个 Card、100+ 个 Button 自动跟随升级<br>
+    → 一处改,全站统一(解决"只改首页其他页还是旧框架"的痛点)
+  </p>
+</div>
+</body>
+</html>

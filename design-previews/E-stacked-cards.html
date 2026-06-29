@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方向 A · 卡片堆叠 Stacked Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf6ec; --bg-2:#f3ecdb; --paper:#fffdf6;
+    --ink:#1c1812; --ink-2:#6b604c; --muted:#8a7d5e;
+    --amber:#b07d12; --amber-soft:#e7c878; --amber-deep:#8a5e0a;
+    --rust:#a64b2a; --sage:#5e6e4a; --clay:#c1845a;
+    --line:#d9cfb8; --line-soft:#e8dfc8;
+    --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.6;
+    background-image:radial-gradient(1200px 600px at 80% -10%, #fff3d280 0%, transparent 60%);}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 28px 80px}
+  .serif{font-family:var(--serif)}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:600}
+
+  /* ===== 方向 A 核心手法:卡片堆叠,主次分明 =====
+     - 大主卡承担"解读"主任务,带柔光+序号水印
+     - 小卡片群用不对称布局,每卡有不同的比例和装饰
+     - hover 时卡片"浮起"+ 边角装饰显形
+     - 用细线/序号/角标打破"统一长方形"的死板
+  */
+
+  .hero-title{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.015em;margin:8px 0 6px}
+  .hero-sub{color:var(--ink-2);margin-bottom:40px;max-width:560px}
+
+  /* --- 主卡(解读):大尺寸 + 衬线序号水印 + 柔光 --- */
+  .hero-card{
+    position:relative;background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    padding:36px 40px;margin-bottom:16px;overflow:hidden;
+    box-shadow:0 1px 0 #fff inset, 0 24px 50px -40px rgba(176,125,18,.4);
+    transition:transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s;
+  }
+  .hero-card::before{ /* 柔光 */
+    content:"";position:absolute;top:-40%;right:-20%;width:60%;height:140%;
+    background:radial-gradient(circle, rgba(231,200,120,.25), transparent 60%);
+    pointer-events:none;
+  }
+  .hero-card::after{ /* 角序号水印 */
+    content:"01";position:absolute;bottom:-12px;right:24px;
+    font-family:var(--serif);font-style:italic;font-size:96px;font-weight:500;
+    color:rgba(176,125,18,.08);line-height:1;pointer-events:none;
+  }
+  .hero-card:hover{transform:translateY(-3px);box-shadow:0 1px 0 #fff inset, 0 32px 60px -40px rgba(176,125,18,.55);}
+  .hero-card .label{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;
+    background:linear-gradient(135deg,#fdf0cc,#f3e0a8);color:var(--amber-deep);font-size:12px;font-weight:600;margin-bottom:14px}
+  .hero-card h3{font-family:var(--serif);font-size:24px;font-weight:500;margin-bottom:10px;position:relative;z-index:1}
+  .hero-card p{color:var(--ink-2);font-size:15px;max-width:480px;position:relative;z-index:1}
+  .hero-card .actions{display:flex;gap:10px;margin-top:18px;position:relative;z-index:1}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .2s}
+  .btn-pri{background:var(--ink);color:#fbf6e9}
+  .btn-pri:hover{background:#2a2418;transform:translateY(-1px)}
+  .btn-gh{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  .btn-gh:hover{border-color:var(--amber);color:var(--amber)}
+
+  /* --- 次卡群:不对称网格,每卡不同比例 --- */
+  .cluster{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:14px;margin-bottom:14px}
+  .card{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:16px;
+    padding:24px 26px;overflow:hidden;transition:all .3s cubic-bezier(.2,.8,.2,1);cursor:pointer}
+  .card:hover{transform:translateY(-4px);border-color:var(--amber-soft);box-shadow:0 20px 40px -28px rgba(176,125,18,.4)}
+  /* 角装饰:不同卡片用不同角的细线,打破统一感 */
+  .card .corner{position:absolute;width:18px;height:18px;transition:all .3s}
+  .card .corner.tl{top:10px;left:10px;border-top:1.5px solid var(--amber-soft);border-left:1.5px solid var(--amber-soft);opacity:0}
+  .card:hover .corner.tl{opacity:1;width:24px;height:24px}
+  .card .corner.br{bottom:10px;right:10px;border-bottom:1.5px solid var(--amber-soft);border-right:1.5px solid var(--amber-soft);opacity:0}
+  .card:hover .corner.br{opacity:1;width:24px;height:24px}
+  .card .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;margin-bottom:14px;font-size:18px;color:#fff}
+  .card.amber .ico{background:linear-gradient(135deg,var(--amber),var(--amber-deep))}
+  .card.rust .ico{background:linear-gradient(135deg,#c4654a,var(--rust))}
+  .card.sage .ico{background:linear-gradient(135deg,#7d9070,var(--sage))}
+  .card.clay .ico{background:linear-gradient(135deg,#d4a07a,var(--clay))}
+  .card h4{font-family:var(--serif);font-size:17px;font-weight:500;margin-bottom:6px}
+  .card p{font-size:13px;color:var(--ink-2)}
+  .card .num{position:absolute;top:18px;right:22px;font-family:var(--serif);font-style:italic;color:var(--line);font-size:14px;transition:color .3s}
+  .card:hover .num{color:var(--amber-soft)}
+  /* 高卡:第二行用更高的卡,增加节奏变化 */
+  .card.tall{padding-top:30px;padding-bottom:30px}
+
+  /* --- 评估行:左右不对称,左大右小 --- */
+  .duo{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
+  .stat-card{background:linear-gradient(135deg,var(--paper),#fff8e6);border:1px solid var(--line);border-radius:16px;padding:28px;position:relative;overflow:hidden}
+  .stat-card::before{content:"⚖";position:absolute;top:50%;right:30px;transform:translateY(-50%);font-size:80px;opacity:.08}
+  .stat-card h4{font-family:var(--serif);font-size:19px;font-weight:500;margin-bottom:8px}
+  .stat-card .badge{display:inline-block;padding:4px 11px;border-radius:6px;background:#d4e8c4;color:#3d6b2a;font-size:12px;font-weight:600;margin-bottom:10px}
+  .stat-card p{font-size:13px;color:var(--ink-2)}
+  .mini{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;transition:all .3s}
+  .mini:hover{border-color:var(--amber-soft);transform:scale(1.02)}
+  .mini .big{font-family:var(--serif);font-size:42px;font-weight:500;color:var(--amber);line-height:1}
+  .mini .lab{font-size:12px;color:var(--muted);margin-top:6px;letter-spacing:.05em}
+
+  @media(max-width:780px){.cluster,.duo{grid-template-columns:1fr}.hero-card::after{font-size:64px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">方向 A · Stacked Cards</div>
+  <h1 class="hero-title serif">卡片堆叠 · 主次分明的智能解读</h1>
+  <p class="hero-sub">用一张大主卡承担核心任务,周围小卡片不对称排布。每张卡有不同的比例、序号水印和角装饰,打破"统一长方形"的死板。hover 浮起+装饰显形。</p>
+
+  <!-- 主卡(大) -->
+  <div class="hero-card">
+    <span class="label">✦ 核心功能</span>
+    <h3>AI 中文深读</h3>
+    <p>把英文论文的结构化拆解——方法、证据、结论——理成一条可理解的脉络,生成你能直接用的中文研读笔记。AI 基于原文回答,并标注引用位置。</p>
+    <div class="actions">
+      <button class="btn btn-pri">开始解读 →</button>
+      <button class="btn btn-gh">查看示例</button>
+    </div>
+  </div>
+
+  <!-- 次卡群(不对称 3 列) -->
+  <div class="cluster">
+    <div class="card amber">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <span class="num">02</span>
+      <div class="ico">⇄</div>
+      <h4>段落翻译</h4>
+      <p>遇到难句,选中即得对照译文,保留学术术语精度。</p>
+    </div>
+    <div class="card sage">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <span class="num">03</span>
+      <div class="ico">💬</div>
+      <h4>可追问助手</h4>
+      <p>对任何细节发问,AI 从原文作答并注明出处。</p>
+    </div>
+    <div class="card rust">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <span class="num">04</span>
+      <div class="ico">📝</div>
+      <h4>智能笔记</h4>
+      <p>自动生成结构化笔记,支持标签与关联文献。</p>
+    </div>
+  </div>
+
+  <!-- 高卡行 -->
+  <div class="cluster">
+    <div class="card clay tall">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <span class="num">05</span>
+      <div class="ico">📚</div>
+      <h4>文献关联</h4>
+      <p>跨论文语义检索,发现相关研究与引用网络。基于向量化全文理解。</p>
+    </div>
+    <div class="card amber tall">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <span class="num">06</span>
+      <div class="ico">📊</div>
+      <h4>引用管理</h4>
+      <p>多格式导出,DOI 自动补全。</p>
+    </div>
+    <div class="card sage tall">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <span class="num">07</span>
+      <div class="ico">🏷</div>
+      <h4>分类标签</h4>
+      <p>智能推荐分类,自定义标签体系。</p>
+    </div>
+  </div>
+
+  <!-- 评估行(左右不对称) -->
+  <div class="duo">
+    <div class="stat-card">
+      <h4>研究质量判断</h4>
+      <span class="badge">高质量 · 证据充分</span>
+      <p>本研究样本量充足(n=1200),采用随机对照设计,统计方法严谨。结论在多个敏感性分析中保持稳定。</p>
+    </div>
+    <div class="mini">
+      <div class="big">A+</div>
+      <div class="lab">综合评分</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
