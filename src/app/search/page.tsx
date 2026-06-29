@@ -81,7 +81,7 @@ export default function AcademicSearchPage() {
   // up and resolved PDF URLs (keyed by paper id or source-index).
   const [findingPdfId, setFindingPdfId] = useState<string | number>('');
   const [resolvedPdfUrls, setResolvedPdfUrls] = useState<Record<string, string>>({});
-
+  const [failedPdfIds, setFailedPdfIds] = useState<Record<string, boolean>>({});
   // Quick note dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
@@ -305,6 +305,11 @@ export default function AcademicSearchPage() {
     handleSearch(offset + maxResults);
   };
 
+  // Stable per-paper key used by PDF lookup state. Prefer paper.id when present.
+  const getPaperKey = (paper: Paper, result: SearchResult, index: number): string => {
+    return paper.id || `${result.source}-${index}`;
+  };
+
   const handleSave = async (paper: Paper, result: SearchResult, index: number) => {
     setSavingId(paper.id || index);
 
@@ -500,36 +505,43 @@ export default function AcademicSearchPage() {
   };
 
   // Look up a legal open-access PDF for a paper via Unpaywall (on demand).
+  // NOTE: this only resolves the URL and stores it in state. It does NOT call
+  // window.open here, because a window.open after an async fetch is treated as
+  // a non-user-gesture popup and silently blocked by browsers. Instead the
+  // button morphs into a clickable link the user clicks themselves.
   const handleFindPdf = async (paper: Paper, result: SearchResult, index: number) => {
-    const paperKey = paper.id || `${result.source}-${index}`;
-    // If we already resolved a URL, just open it.
-    const existing = resolvedPdfUrls[paperKey] || paper.pdfUrl;
-    if (existing) {
-      window.open(existing, '_blank');
-      return;
-    }
+    const paperKey = getPaperKey(paper, result, index);
+    // If we already resolved a URL, nothing to do (the link button handles opening).
+    if (resolvedPdfUrls[paperKey]) return;
     if (!paper.doi) {
-      safeToast({
+      toast({
         title: "无法查找 PDF",
         description: "该论文没有 DOI，无法查询开放获取版本。",
       });
       return;
     }
     setFindingPdfId(paperKey);
+    setFailedPdfIds(prev => { const n = { ...prev }; delete n[paperKey]; return n; });
     try {
       const response = await fetch(`/api/literature/pdf?doi=${encodeURIComponent(paper.doi)}`);
       const data = await response.json();
       if (data.found && data.pdfUrl) {
         setResolvedPdfUrls(prev => ({ ...prev, [paperKey]: data.pdfUrl }));
-        window.open(data.pdfUrl, '_blank');
+        toast({
+          title: "已找到免费 PDF",
+          description: "点击「查看 PDF」打开（合法开放获取版本）。",
+        });
       } else {
-        safeToast({
+        setFailedPdfIds(prev => ({ ...prev, [paperKey]: true }));
+        toast({
+          variant: "destructive",
           title: "未找到免费 PDF",
           description: data.message || "未找到合法开放获取的 PDF，可能需要机构订阅。",
         });
       }
     } catch (err) {
-      safeToast({
+      setFailedPdfIds(prev => ({ ...prev, [paperKey]: true }));
+      toast({
         variant: "destructive",
         title: "查找失败",
         description: "PDF 查询服务暂时不可用，请稍后重试。",
@@ -949,33 +961,62 @@ export default function AcademicSearchPage() {
                           </div>
 
                           <div className="flex gap-2">
-                            {/* PDF: open existing pdfUrl, or look up via Unpaywall on demand */}
-                            {(resolvedPdfUrls[`${result.source}-${index}`] || paper.id && resolvedPdfUrls[paper.id] || paper.pdfUrl) ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const url = resolvedPdfUrls[`${result.source}-${index}`] || (paper.id && resolvedPdfUrls[paper.id]) || paper.pdfUrl;
-                                  if (url) window.open(url, '_blank');
-                                }}
-                              >
-                                📄 PDF
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleFindPdf(paper, result, index)}
-                                disabled={findingPdfId === (paper.id || index)}
-                                title={paper.doi ? "通过 Unpaywall 查询合法开放获取 PDF" : "该论文无 DOI，无法查询"}
-                              >
-                                {findingPdfId === (paper.id || index) ? (
-                                  <><Loader2 className="w-3 h-3 mr-1 animate-spin" />查找中...</>
-                                ) : (
-                                  <>📄 找PDF</>
-                                )}
-                              </Button>
-                            )}
+                            {/* PDF lookup: three states — looking up / resolved (link) / failed (retry) */}
+                            {(() => {
+                              const paperKey = getPaperKey(paper, result, index);
+                              const resolved = resolvedPdfUrls[paperKey] || paper.pdfUrl;
+                              const isLooking = findingPdfId === paperKey;
+                              const failed = failedPdfIds[paperKey];
+
+                              if (isLooking) {
+                                return (
+                                  <Button variant="outline" size="sm" disabled>
+                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />查找中...
+                                  </Button>
+                                );
+                              }
+                              if (resolved) {
+                                // Use a real <a> so the click is a genuine user gesture
+                                // (window.open after async fetch gets popup-blocked).
+                                return (
+                                  <a
+                                    href={resolved}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center h-8 px-3 text-sm rounded-md border border-green-300 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-700 dark:bg-green-950/50 dark:text-green-400"
+                                    title="合法开放获取版本，点击在新标签页打开"
+                                  >
+                                    📄 查看 PDF
+                                  </a>
+                                );
+                              }
+                              if (failed) {
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">无免费PDF</span>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-muted-foreground"
+                                      onClick={() => handleFindPdf(paper, result, index)}
+                                      title="点击重新查找"
+                                    >
+                                      📄 重试
+                                    </Button>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleFindPdf(paper, result, index)}
+                                  title={paper.doi ? "通过 Unpaywall 查询合法开放获取 PDF" : "该论文无 DOI，无法查询"}
+                                >
+                                  📄 找PDF
+                                </Button>
+                              );
+                            })()}
                             <Button
                               variant="outline"
                               size="sm"
