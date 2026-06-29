@@ -22,6 +22,62 @@ import {
 } from './openalex';
 
 /**
+ * Source priority for cross-source deduplication. When the same DOI is found
+ * in multiple sources, the paper is kept in the highest-priority source.
+ * Lower number = higher priority.
+ */
+const SOURCE_PRIORITY: Record<string, number> = {
+  openalex: 0,
+  'semantic-scholar': 1,
+  arxiv: 2,
+  pubmed: 3,
+};
+
+/**
+ * Deduplicate papers across sources by DOI, in place.
+ *
+ * - Papers WITHOUT a doi are left untouched (cannot safely merge).
+ * - For each DOI seen in more than one source, the paper is kept only in the
+ *   source with the highest priority (lowest number); it is removed from all
+ *   other sources' paper lists.
+ *
+ * This keeps each result group (per source) internally consistent with the
+ * frontend, which renders results grouped by `result.source`.
+ */
+function dedupeAcrossSources(results: SearchResults[]): void {
+  // Map: doi -> priority of the source that already owns it
+  const seenDoi = new Map<string, number>();
+
+  // First pass: claim each DOI for the highest-priority source that has it.
+  for (const group of results) {
+    const groupPriority = SOURCE_PRIORITY[group.source] ?? 99;
+    for (const paper of group.papers) {
+      const doi = paper.doi?.trim().toLowerCase();
+      if (!doi) continue;
+      const currentOwner = seenDoi.get(doi);
+      if (currentOwner === undefined) {
+        seenDoi.set(doi, groupPriority);
+      } else if (groupPriority < currentOwner) {
+        // This source has higher priority; take ownership.
+        seenDoi.set(doi, groupPriority);
+      }
+    }
+  }
+
+  // Second pass: drop papers whose DOI is owned by a higher-priority source.
+  for (const group of results) {
+    const groupPriority = SOURCE_PRIORITY[group.source] ?? 99;
+    group.papers = group.papers.filter((paper) => {
+      const doi = paper.doi?.trim().toLowerCase();
+      if (!doi) return true; // no DOI: keep
+      const ownerPriority = seenDoi.get(doi);
+      // Keep only if this source is the owner (its priority == owner priority).
+      return ownerPriority === groupPriority;
+    });
+  }
+}
+
+/**
  * Unified literature search across all databases
  */
 export async function searchLiterature(params: UnifiedSearchParams): Promise<{
@@ -85,6 +141,13 @@ export async function searchLiterature(params: UnifiedSearchParams): Promise<{
       errors.push(outcome.error);
     }
   }
+
+  // Deduplicate papers across sources by DOI. When the same DOI appears in
+  // multiple sources, keep it in the highest-priority source and drop the
+  // copies elsewhere. Priority: openalex > semantic-scholar > arxiv > pubmed
+  // (OpenAlex carries the richest metadata). Papers without a DOI are kept
+  // untouched (we cannot safely merge them).
+  dedupeAcrossSources(results);
 
   return { results, errors };
 }
