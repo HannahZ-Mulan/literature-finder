@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SearchResultsSkeleton } from '@/components/search-result-skeleton';
-import { Loader2, ChevronLeft, ChevronRight, Filter, X, History, Check, FileText } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Filter, X, History, Check, FileText, Search } from 'lucide-react';
 import { QuickNoteDialog } from '@/components/notes/QuickNoteDialog';
 import {
   Select,
@@ -72,6 +72,10 @@ export default function AcademicSearchPage() {
   const [savedLiteratureIds, setSavedLiteratureIds] = useState<Record<string, number>>({});
   const [exportFormat, setExportFormat] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
+
+  // Chinese query translation suggestion state
+  const [translatedTerms, setTranslatedTerms] = useState<string[]>([]);
+  const [isTranslatingQuery, setIsTranslatingQuery] = useState(false);
 
   // Quick note dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
@@ -176,6 +180,40 @@ export default function AcademicSearchPage() {
     }
   };
 
+  // Translate Chinese query to English terms (async, does not block search)
+  const translateQuerySuggestion = async (q: string) => {
+    if (!/[\u4e00-\u9fa5]/.test(q)) {
+      setTranslatedTerms([]);
+      return;
+    }
+    setIsTranslatingQuery(true);
+    try {
+      const response = await fetch('/api/translate-query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q }),
+      });
+      const data = await response.json();
+      if (response.ok && data.terms?.length > 0) {
+        setTranslatedTerms(data.terms);
+      } else {
+        setTranslatedTerms([]);
+      }
+    } catch (err) {
+      console.error('Translate query failed:', err);
+      setTranslatedTerms([]);
+    } finally {
+      setIsTranslatingQuery(false);
+    }
+  };
+
+  // Apply a suggested English term: fill the box and re-search
+  const handleUseEnglishTerm = (term: string) => {
+    setQuery(term);
+    setTranslatedTerms([]);
+    handleSearch(0, { query: term });
+  };
+
   const handleSearch = async (newOffset = 0, overrideParams?: any) => {
     const searchQuery = overrideParams?.query || query;
     if (!searchQuery.trim()) {
@@ -185,6 +223,9 @@ export default function AcademicSearchPage() {
 
     setIsSearching(true);
     setError('');
+
+    // Fire Chinese→English translation suggestion (does not block the search)
+    translateQuerySuggestion(searchQuery);
 
     // Update URL with search params
     const params = new URLSearchParams();
@@ -708,6 +749,37 @@ export default function AcademicSearchPage() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Chinese Query Translation Suggestion */}
+        {isTranslatingQuery && (
+          <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/30">
+            <CardContent className="py-3 flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              <p className="text-sm text-muted-foreground">正在将中文查询翻译为英文术语建议...</p>
+            </CardContent>
+          </Card>
+        )}
+        {!isTranslatingQuery && translatedTerms.length > 0 && (
+          <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30">
+            <CardContent className="py-3 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                💡 检测到中文查询，英文学术数据库用以下英文术语检索效果更好，点击一键使用：
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {translatedTerms.map((term, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleUseEnglishTerm(term)}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
+                  >
+                    <Search className="w-3 h-3" />
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Error Message */}
         {error && (
