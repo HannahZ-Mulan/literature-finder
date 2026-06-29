@@ -19,7 +19,7 @@ interface Paper {
   summary?: string;
   createdAt: string;
   googleScholarUrl?: string;
-  literatureId?: number | null;
+  literature_id?: number | null; // uploaded_papers.literature_id (snake_case, per schema)
 }
 
 interface ChineseSummary {
@@ -118,6 +118,7 @@ export default function PaperReaderPage() {
   const [readingLists, setReadingLists] = useState<Array<{ id: number; name: string }>>([]);
   const [showListDropdown, setShowListDropdown] = useState(false);
   const [addingToListId, setAddingToListId] = useState<number | null>(null);
+  const [listsLoaded, setListsLoaded] = useState(false);
 
   useEffect(() => {
     fetchPaper();
@@ -151,21 +152,22 @@ export default function PaperReaderPage() {
   };
 
   // Reading list handlers (SPEC-003 UI tail): fetch user's lists, add paper.
-  // Uses paper's literatureId to bridge uploaded paper → literature system.
+  // Uses paper's literature_id to bridge uploaded paper → literature system.
   const fetchReadingLists = async () => {
     try {
       const res = await fetch('/api/reading-lists');
       const data = await res.json();
       const lists = data.reading_lists || data.readingLists || [];
       setReadingLists(lists);
+      setListsLoaded(true);
     } catch (e) {
       console.error('Failed to load reading lists:', e);
     }
   };
 
   const handleAddToReadingList = async (listId: number) => {
-    // literatureId may come as camelCase or snake_case depending on the API layer.
-    const litId = paper?.literatureId ?? (paper as any)?.literature_id;
+    // uploaded_papers.literature_id bridges uploaded paper → literature system.
+    const litId = paper?.literature_id;
     if (!litId) {
       toast({
         title: '无法加入阅读列表',
@@ -686,7 +688,7 @@ export default function PaperReaderPage() {
             <div className="relative">
               <Button
                 onClick={() => {
-                  if (!showListDropdown) fetchReadingLists();
+                  if (!showListDropdown && !listsLoaded) fetchReadingLists();
                   setShowListDropdown(!showListDropdown);
                 }}
                 variant="outline"
